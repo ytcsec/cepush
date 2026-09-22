@@ -9,7 +9,7 @@ Last updated: 2026-09-22
 
 | # | Item | State |
 |---|------|-------|
-| 1 | Repository scaffold, `.gitignore`, `.claude/settings.json` | ✓ done |
+| 1 | Repository scaffold, ignore rules, line-ending policy | ✓ done |
 | 2 | WSL2 + Ubuntu development environment | ✗ blocked — owner action |
 | 3 | Node.js v22 inside WSL | ✗ blocked — depends on 2 |
 | 4 | Compact compiler installed, `compact --version` verified | ✗ blocked — depends on 2 |
