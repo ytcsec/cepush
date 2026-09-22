@@ -72,7 +72,7 @@ export class Contract {
         if (!(typeof(contextOrig_0) === 'object' && contextOrig_0.currentQueryContext != undefined)) {
           __compactRuntime.typeError('vote',
                                      'argument 1 (as invoked from Typescript)',
-                                     'cepush.compact line 79 char 1',
+                                     'cepush.compact line 81 char 1',
                                      'CircuitContext',
                                      contextOrig_0)
         }
@@ -113,7 +113,7 @@ export class Contract {
     if (!(typeof(options_0) === 'bigint' && options_0 >= 0n && options_0 <= 255n)) {
       __compactRuntime.typeError('Contract state constructor',
                                  'argument 2 (argument 3 as invoked from Typescript)',
-                                 'cepush.compact line 59 char 1',
+                                 'cepush.compact line 61 char 1',
                                  'Uint<0..256>',
                                  options_0)
     }
@@ -238,7 +238,7 @@ export class Contract {
     if (!(typeof(result_0) === 'bigint' && result_0 >= 0n && result_0 <= 255n)) {
       __compactRuntime.typeError('secretBallot',
                                  'return value',
-                                 'cepush.compact line 55 char 1',
+                                 'cepush.compact line 57 char 1',
                                  'Uint<0..256>',
                                  result_0)
     }
@@ -398,7 +398,7 @@ export function ledger(stateOrChargedState) {
         if (!(typeof(key_0) === 'bigint' && key_0 >= 0n && key_0 <= 255n)) {
           __compactRuntime.typeError('member',
                                      'argument 1',
-                                     'cepush.compact line 46 char 1',
+                                     'cepush.compact line 48 char 1',
                                      'Uint<0..256>',
                                      key_0)
         }
@@ -427,7 +427,7 @@ export function ledger(stateOrChargedState) {
         if (!(typeof(key_0) === 'bigint' && key_0 >= 0n && key_0 <= 255n)) {
           __compactRuntime.typeError('lookup',
                                      'argument 1',
-                                     'cepush.compact line 46 char 1',
+                                     'cepush.compact line 48 char 1',
                                      'Uint<0..256>',
                                      key_0)
         }

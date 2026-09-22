@@ -43,22 +43,33 @@ the multi-option mode. Track: **Governance**.
 | Poll title and option count | Public ledger | Everyone |
 | Per-option tally counters | Public ledger | Everyone |
 | Total ballots counted | Public ledger | Everyone |
-| The ballot (which option you picked) | Private witness | No one |
-| Voter identity | Never submitted | No one |
+| The ballot (which option you picked) | Private witness | Never reaches the contract |
 
-The contract calls `disclose()` in exactly two places, and both are deliberate:
+The contract calls `disclose()` three times, for two purposes:
 
-1. **Poll metadata** in the constructor — a poll nobody can read is not a poll.
-2. **The tally increment** in `vote` — a tally nobody can read is not verifiable.
+1. **Poll metadata** in the constructor — `title` and `optionCount`. A poll nobody can
+   read is not a poll.
+2. **The tally increment** in `vote` — the option index, used as the counter key. A
+   tally nobody can read is not verifiable.
 
 Nothing else crosses from private into public. The ballot reaches the circuit as a
-witness, not as a call argument, so it never appears in the transaction.
+witness, not as a call argument, so it never appears in the transaction's arguments.
 
-**Known limitation at this level.** The tallies are plaintext counters, so the state
-delta of a single vote transaction shows which counter moved. The ballot is out of the
-proof and out of the call arguments, but not out of a ledger diff taken around one
-transaction. Breaking the wallet↔ballot link is what the nullifier (L3) and the
-allowlist membership proof (L4) are for.
+### What this level does not do yet
+
+The contract is deliberately small at L1, so it is worth being precise about what is
+still missing:
+
+- **No eligibility check.** Any caller can run `vote()`, as often as they like. The
+  one-vote-per-member nullifier lands at L3, the allowlist membership proof at L4.
+- **No unlinkability.** The tallies are plaintext counters, so the state delta of a
+  single vote transaction shows which counter moved, and the wallet that submitted it
+  is visible on chain. The ballot is out of the proof and out of the call arguments,
+  but not out of a ledger diff taken around one transaction.
+
+What L1 does establish is the shape the rest builds on: the ballot lives in a witness,
+the range check runs inside the circuit against the private value, and only the
+aggregate is ever published.
 
 This product moves no money. There is no fund handling and no token transfer anywhere
 in the contract, by design.
