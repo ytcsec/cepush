@@ -92,31 +92,50 @@ witness, so the transaction carries a proof and nothing else.
 
 ## Running it
 
-### Prerequisites
+The toolchain ships Linux and macOS binaries only, so the repository carries a Docker
+image definition. The build is then identical on every platform, Windows included, and
+Docker is the only prerequisite.
 
-- **Node.js 22** — pinned in `.nvmrc`, so `nvm use` picks it up
-- **Docker**, running
-- **Compact compiler**, on the 0.31 line:
+```bash
+docker build -f docker/toolchain.Dockerfile -t cepush-toolchain .
+docker run --rm -v "$PWD:/work" cepush-toolchain bash docker/verify.sh
+```
+
+`verify.sh` prints the compiler version, compiles the contract, lists the artefacts it
+produced and runs the tests — everything below, in one command.
+
+The build is pinned end to end:
+
+| Component | Version |
+|---|---|
+| Compact compiler | 0.31.1 |
+| Compact language | 0.23.0 |
+| Compact runtime | 0.16.0 |
+| Node.js | 22 |
+
+### Native toolchain
+
+On Linux, macOS, or WSL2:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf   https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
 compact update 0.31
-compact --version           # 0.31.x
+compact --version
 ```
 
 > Pin to 0.31. The newer 0.34 compiler targets ledger 9, which is not deployed on the
 > public networks yet.
 
-On Windows there is no native build of the toolchain — it runs inside WSL2/Ubuntu.
-Full steps: **[docs/SETUP-WINDOWS.md](docs/SETUP-WINDOWS.md)**.
-
-### Build and test
+Then, with Node 22 (`nvm use` picks it up from `.nvmrc`):
 
 ```bash
 npm install
 npm run compact             # compiles to managed/cepush
-npm test                    # 11 tests across logic, state and privacy
+npm test                    # 10 tests across logic, state and privacy
 ```
+
+Windows has no native build of the toolchain — use the Docker route above, or WSL2.
+See **[docs/SETUP-WINDOWS.md](docs/SETUP-WINDOWS.md)**.
 
 ### Proof server
 
@@ -130,11 +149,14 @@ npm run proof-server        # docker, listens on :6300
 
 ## Tests
 
-| Suite | Covers |
-|---|---|
-| circuit logic | only the chosen option increments, by one; out-of-range ballots are rejected |
-| state transition | the ledger after a sequence of votes; counters always sum to `totalVotes` |
-| privacy | the ballot never reaches the ledger, the circuit returns nothing, vote order is unrecoverable |
+Ten tests, all passing, driving the compiled circuits in-process — no node and no
+proof server, so the suite finishes in seconds.
+
+| Suite | Tests | Covers |
+|---|---|---|
+| circuit logic | 3 | only the chosen option increments, by one; out-of-range ballots are rejected; a poll needs at least two options |
+| state transition | 3 | the ledger after a sequence of votes; metadata stays stable; counters always sum to `totalVotes` |
+| privacy | 4 | the ballot never reaches the ledger, the circuit returns nothing, the private state stays local, vote order is unrecoverable |
 
 ---
 
