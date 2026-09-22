@@ -19,8 +19,18 @@ import type { WalletSession } from './wallet';
 /** Filled in after the Preprod deploy. Empty means "not wired up yet". */
 export const CONTRACT_ADDRESS: string = import.meta.env.VITE_CONTRACT_ADDRESS ?? '';
 
-/** Where the compiled proving keys and zkir are served from. */
-export const ZK_CONFIG_BASE: string = import.meta.env.VITE_ZK_CONFIG_BASE ?? '/managed/cepush';
+/**
+ * Where the compiled proving keys and zkir are served from.
+ *
+ * `FetchZkConfigProvider` calls `new URL(base)` in its constructor and rejects
+ * anything that is not http(s), so a page-relative path throws before it is
+ * ever fetched. Resolve against the page origin here: an absolute value in the
+ * environment survives unchanged, a relative one becomes absolute.
+ */
+export const ZK_CONFIG_BASE: string = new URL(
+  import.meta.env.VITE_ZK_CONFIG_BASE ?? '/managed/cepush',
+  window.location.origin,
+).toString();
 
 export const isDeployed = (): boolean => CONTRACT_ADDRESS.trim().length > 0;
 
