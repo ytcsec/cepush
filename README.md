@@ -101,6 +101,52 @@ witness, so the transaction carries a proof and nothing else.
 
 ---
 
+## The app
+
+A React + Vite frontend talks to Lace through the DApp Connector API (v4.0.1).
+
+```
+src/
+├── lib/wallet.ts          discovery, connect, typed errors
+├── lib/contract.ts        the contract interface and the poll definition
+├── hooks/useWallet.ts     connect / disconnect as React state
+├── components/
+│   ├── WalletConnect.tsx  wallet panel and every error state
+│   └── CircuitCall.tsx    the ballot panel
+└── App.tsx
+```
+
+**Wallet discovery.** Connector v4 wallets register under `window.midnight` keyed by a
+freshly minted UUID, not under a fixed name, so the app enumerates rather than
+reaching for `window.midnight.mnLace`. Extensions inject themselves whenever they get
+around to it, so discovery polls briefly instead of deciding on the first render that
+no wallet exists.
+
+**Connect and disconnect.** Connecting calls `wallet.connect(networkId)` and then checks
+`getConnectionStatus()` really landed on the network this build targets. The connector
+exposes no revoke call, so disconnecting means the app forgets the session it was
+handed; permissions live in the wallet itself.
+
+**Error states.** No wallet installed, request declined, network mismatch, proof
+failure, and unknown wallet errors each get their own message rather than a generic
+failure.
+
+### The privacy claim, in the UI
+
+The ballot is held in component state and nowhere else. It is never written to a log,
+never put in storage, never sent as a circuit argument, and it is cleared the moment the
+submit handler is finished with it. The panel says so, next to the button that uses it:
+
+> 🛡 Proved without revealing your input — your choice stays on this device and is never
+> sent to the contract.
+
+That claim is exactly as strong as the contract behind it, which means it is subject to
+the limits in *What this level does not do yet* above: the ballot stays out of the proof
+and out of the call arguments, but the tally counters are public, so a ledger diff taken
+around a single transaction still shows which counter moved.
+
+---
+
 ## Running it
 
 The toolchain ships Linux and macOS binaries only, so the repository carries a Docker
@@ -143,6 +189,14 @@ Then, with Node 22 (`nvm use` picks it up from `.nvmrc`):
 npm install
 npm run compact             # compiles to managed/cepush
 npm test                    # 10 tests across logic, state and privacy
+```
+
+For the frontend:
+
+```bash
+cp .env.example .env        # set VITE_CONTRACT_ADDRESS once deployed
+npm run dev                 # http://localhost:5173
+npm run build               # tsc --noEmit && vite build, zero errors
 ```
 
 Windows has no native build of the toolchain — use the Docker route above, or WSL2.

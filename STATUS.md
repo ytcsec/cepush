@@ -1,88 +1,116 @@
 # STATUS
 
-**Current level: L1 — Toolchain, first contract, tests, README**
+**Current level: L2 — frontend, Lace on Preprod**
 Last updated: 2026-09-22
+
+> **L1 is not closed yet.** Its deploy requirement is still open, and L2 needs the same
+> deploy. Only the highest *unbroken* level is rewarded, so the deploy is the single
+> most valuable thing left to do. See *The one blocker* below.
 
 ---
 
-## Requirements to pass — L1
+## L1 — carried over
 
 | # | Requirement | State |
 |---|-------------|-------|
-| 1 | Toolchain installed, contract compiles via `compact compile` | ✓ done — compiler 0.31.1, exit 0 |
-| 2 | Passing test suite | ✓ done — 10/10 |
-| 3 | `managed/` directory present (circuits + keys) | ✓ done — committed |
-| 4 | Deployed to Preview or Preprod, address visible | ✗ owner action — faucet, then deploy |
-| 5 | Initial product idea, one paragraph, in the README | ✓ done |
-| 6 | Minimum 5 meaningful commits | ✓ done |
+| 1 | Toolchain installed, contract compiles | ✓ compiler 0.31.1 |
+| 2 | Passing test suite | ✓ 10/10 |
+| 3 | `managed/` directory (circuits + keys) | ✓ committed |
+| 4 | Deployed to Preprod, address visible | ✗ **blocked — owner** |
+| 5 | Initial product idea in the README | ✓ |
+| 6 | Minimum 5 meaningful commits | ✓ |
 
-## Submission checklist — L1
+## L2 — requirements to pass
+
+| # | Requirement | State |
+|---|-------------|-------|
+| 1 | Lace connect / disconnect implemented | ✓ done — connector v4.0.1, UUID discovery |
+| 2 | Circuit called successfully from the frontend | ✗ **not implemented** — see below |
+| 3 | An observable privacy behaviour | ◐ the UI claim and the private-ballot handling are in place; nothing is proved yet because (2) is open |
+| 4 | Contract deployed to Preprod, verifiable address | ✗ **blocked — owner** |
+| 5 | Minimum 8 meaningful commits | ✓ |
+
+## L2 — submission checklist
 
 | # | Item | State |
 |---|------|-------|
-| 1 | Public GitHub repository with a `README.md` | ✓ done |
-| 2 | Setup instructions (how to run locally) | ✓ done — README *Running it* + `docs/SETUP-WINDOWS.md` |
-| 3 | Screenshot: successful compile output, circuits listed | ✗ owner action — one command, see below |
-| 4 | Screenshot: contract deployed, address shown | ✗ owner action — after (4) above |
-| 5 | README section: public state vs private witness | ✓ done — *What is private and what is public* |
-| 6 | Initial product idea paragraph | ✓ done — *The idea* |
-| 7 | Minimum 5 meaningful commits | ✓ done |
-
-**Outstanding: the deploy, and the two screenshots.** Everything that can be done
-without a funded wallet is done.
+| 1 | Public GitHub repository with README | ✓ |
+| 2 | Live demo link | ✗ deploy the site once (2) and (4) land |
+| 3 | Deployed Preprod address, verifiable on-chain | ✗ blocked — owner |
+| 4 | Demo video: wallet connect + successful circuit call | ✗ blocked — owner, needs (2) |
+| 5 | README documenting the privacy claim | ✓ |
+| 6 | Minimum 8 meaningful commits | ✓ |
 
 ---
 
-## What the build produces
+## What the frontend does today
 
-`docker run --rm -v "$PWD:/work" cepush-toolchain bash docker/verify.sh`
+`npm run dev`, or `npm run build` for a production bundle. The build is clean:
+`tsc --noEmit` and `vite build` both pass with zero errors.
+
+- **Wallet discovery** — enumerates `window.midnight`, because connector v4 wallets
+  register under a freshly minted UUID rather than a fixed key. Polls briefly, since
+  extensions inject themselves after first render.
+- **Connect** — `wallet.connect(networkId)`, then verifies `getConnectionStatus()`
+  actually landed on the expected network.
+- **Disconnect** — the connector exposes no revoke call, so the app forgets the session
+  it was handed. Permissions are managed inside the wallet.
+- **Error states** — no wallet installed, request declined, network mismatch, and
+  unknown wallet errors, each with its own message.
+- **The ballot** — held in component state, never logged, never stored, cleared as soon
+  as the submit handler is done with it.
+
+## What it does not do yet
+
+`castVote` in `src/lib/contract.ts` validates the ballot range and then refuses,
+because there is no contract to call. Two things are missing, in this order:
+
+1. **A deployed contract address.** Blocked on the faucet.
+2. **The provider bundle.** Midnight.js needs six providers — private state, public
+   data, zk config, proof, wallet and midnight. Five are straightforward factory calls.
+   The sixth, the bridge from the DApp connector to `WalletProvider`/`MidnightProvider`,
+   has no helper in the SDK: the connector speaks serialised transaction strings while
+   midnight-js speaks `UnboundTransaction` objects, and that glue has to be written by
+   hand. It cannot be verified without a deployed contract, a funded wallet, Lace, and a
+   running proof server, so it is deliberately not guessed at yet.
+
+---
+
+## The one blocker
+
+Everything outstanding at both levels traces back to the deploy:
 
 ```
-managed/cepush/compiler/contract-info.json
-managed/cepush/contract/index.d.ts
-managed/cepush/contract/index.js
-managed/cepush/contract/index.js.map
-managed/cepush/keys/vote.prover
-managed/cepush/keys/vote.verifier
-managed/cepush/zkir/vote.bzkir
-managed/cepush/zkir/vote.zkir
+faucet → funded wallet → deploy → address
+                                    ├── L1 requirement 4
+                                    ├── L2 requirement 4
+                                    ├── unblocks the circuit call (L2 requirement 2)
+                                    ├── unblocks the demo video
+                                    └── unblocks the live demo link
 ```
 
-One circuit, `vote`, with its proving and verifying keys. The compiler prints
-`Compiling 1 circuits:` and does not name them; the circuit names are visible in the
-artefact filenames above and in `contract-info.json`.
+Owner actions, in order:
+
+1. Fund a wallet at the Preprod faucet — https://midnight-tmnight-preprod.nethermind.dev/
+2. Start the proof server — `npm run proof-server`, keep the terminal open.
+3. Deploy and capture the address.
+4. Put the address in `.env` as `VITE_CONTRACT_ADDRESS` and in the README table.
+
+---
+
+## Verified toolchain
 
 | Component | Version |
 |---|---|
 | Compact compiler | 0.31.1 |
 | Compact language | 0.23.0 |
 | Compact runtime | 0.16.0 |
-| Node.js | 22.23.2 |
+| Midnight.js | 4.1.1 |
+| DApp Connector API | 4.0.1 |
+| Proof server | 8.1.0 |
+| Node.js | 22 |
 
----
-
-## Owner actions to close L1
-
-1. **Screenshot the compile.** Run the verify command above and capture the terminal.
-   Save as `docs/screenshots/compile.png`.
-2. **Fund a wallet** at the Preprod faucet — https://midnight-tmnight-preprod.nethermind.dev/
-3. **Start the proof server** — `npm run proof-server`, keep the terminal open.
-4. **Deploy** to Preprod and capture the terminal showing the contract address.
-   Save as `docs/screenshots/deploy.png`.
-5. **Paste the address** into the README contract address table.
-
----
-
-## Resolved during the first build
-
-| Question | Answer |
-|---|---|
-| `pragma language_version` | **0.23** — the compiler rejected 0.25 outright. Docs pages disagreed; the compiler settled it. |
-| `@midnight-ntwrk/compact-runtime` pin | **0.16.0** — confirmed by `contract-info.json`. The 0.16.0 guess was right. |
-| `tallies.lookup(k).increment(1)` | **Valid.** A `Counter` stored as a `Map` value is reachable through `lookup`. |
-| Top-level `const` | **Not a program element** in language 0.23. The option bound is a literal in the loop instead. |
-| Test harness API | `constructorContext` / `emptyZswapLocalState` do not exist in runtime 0.16. The factories are `createConstructorContext` and `createCircuitContext`, and the context field is `currentQueryContext`. |
-| Compile output filename | `contract/index.js`, not `index.cjs`. |
+Matches the official support matrix for the 0.31.1 compiler line.
 
 ---
 
@@ -90,8 +118,9 @@ artefact filenames above and in `contract-info.json`.
 
 - **2026-09-22** — The toolchain runs in Docker rather than WSL2. It pins the compiler,
   the language, the runtime and Node in one image definition, works the same on every
-  platform, and needs no distro install. WSL2 stays documented as an alternative.
+  platform, and needs no distro install.
 - **2026-09-22** — Target compiler line is `compact update 0.31`. Compiler 0.34 exists
   but targets ledger 9, which is not deployed on public networks yet.
-- **2026-09-22** — Compile output goes to `managed/` at the repository root, matching
-  the required layout and the submission checklist. It is committed, never ignored.
+- **2026-09-22** — Compile output goes to `managed/` at the repository root, committed.
+- **2026-09-22** — The wallet bridge is left unwritten rather than guessed. Shipping
+  unverifiable glue would read as progress while being untested code.
