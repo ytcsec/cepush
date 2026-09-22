@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { largestUnshielded, useBalances } from '../hooks/useBalances';
 import { truncateAddress } from '../lib/wallet';
 import type { useWallet } from '../hooks/useWallet';
 
@@ -10,6 +11,7 @@ const FAUCET_URL = 'https://midnight-tmnight-preprod.nethermind.dev/';
 
 export function WalletConnect({ status, session, error, connect, disconnect, networkId }: Props) {
   const [copied, setCopied] = useState(false);
+  const { balances, loading: loadingBalances, refresh } = useBalances(session);
 
   async function copyAddress() {
     if (!session) return;
@@ -60,6 +62,28 @@ export function WalletConnect({ status, session, error, connect, disconnect, net
         </p>
 
         <div className="fund">
+          <div className="balances">
+            <div>
+              <span className="muted">tNIGHT</span>
+              <strong>{balances ? largestUnshielded(balances).toString() : '—'}</strong>
+            </div>
+            <div>
+              <span className="muted">tDUST</span>
+              <strong>{balances ? balances.dust.balance.toString() : '—'}</strong>
+            </div>
+            <button className="button button--ghost" onClick={() => void refresh()} disabled={loadingBalances}>
+              {loadingBalances ? 'Checking…' : 'Refresh'}
+            </button>
+          </div>
+
+          {balances !== null && balances.dust.balance === 0n && (
+            <p className="notice notice--not-deployed">
+              {largestUnshielded(balances) === 0n
+                ? 'No tNIGHT yet. The faucet can take a minute; press Refresh.'
+                : 'tNIGHT has arrived but no tDUST has been generated. Fees are paid in tDUST — use Generate tDUST in Lace to register the NIGHT, then wait a moment and Refresh.'}
+            </p>
+          )}
+
           <p className="muted">
             This is your <strong>unshielded</strong> address — the one the faucet wants.
             It rejects shielded and DUST addresses.

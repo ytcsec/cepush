@@ -157,3 +157,16 @@ fieldset:disabled { opacity: 0.5; }
 
 .fund p { margin: 0 0 0.6rem; }
 .fund-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+
+.balances {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.balances > div { display: flex; flex-direction: column; }
+.balances span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.balances strong { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.05rem; }
+.balances button { margin-left: auto; }
