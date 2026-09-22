@@ -1,0 +1,94 @@
+pragma language_version 0.25;
+
+import CompactStandardLibrary;
+
+// =============================================================================
+// cepush — private, verifiable voting for communities
+//
+// Level 1 scope: one poll, a private ballot witness, public per-option tallies.
+//
+// PUBLIC (written to the ledger, readable by anyone):
+//   - title        the poll question
+//   - optionCount  how many options the poll offers
+//   - tallies      one counter per option
+//   - totalVotes   how many ballots have been counted in total
+//
+// PRIVATE (never written, never returned, never logged):
+//   - the ballot itself, supplied by the `secretBallot` witness. It is a local
+//     input to the proof. It is not a circuit parameter, so it never appears in
+//     the transaction's call arguments.
+//
+// PROVED (what a verifier learns from the proof alone):
+//   - the prover knew a ballot value strictly below `optionCount`,
+//   - exactly one option counter was incremented, by exactly one,
+//   - `totalVotes` grew by exactly one.
+//
+// KNOWN LIMITATION AT L1: the tallies are plaintext ledger counters, so the
+// *state delta* of a single vote transaction shows which counter moved. The
+// ballot is hidden from the proof and from the call arguments, but not from an
+// observer diffing the ledger around one transaction. Unlinkability of a ballot
+// to a voter arrives with the nullifier (L3) and the allowlist membership proof
+// (L4), which remove the wallet↔ballot link. Hiding the per-transaction delta
+// itself needs commit-then-reveal tallies and is out of L1 scope.
+//
+// This contract moves no funds and holds no balance, by design.
+// =============================================================================
+
+/// The poll question. Public: voters must be able to read what they are voting on.
+export ledger title: Opaque<"string">;
+
+/// How many options this poll offers. Public: it bounds the valid ballot range,
+/// and every verifier needs it to check the range proof.
+export ledger optionCount: Uint<8>;
+
+/// One counter per option index, `0` through `optionCount - 1`.
+/// Public by design: a tally nobody can read is a tally nobody can verify.
+export ledger tallies: Map<Uint<8>, Counter>;
+
+/// Total ballots counted. Public: lets anyone check that the per-option
+/// counters sum to the number of votes cast, with no gaps or double counts.
+export ledger totalVotes: Counter;
+
+/// Upper bound on options. Fixed at compile time so the constructor's
+/// initialisation loop has a bound the compiler can unroll.
+const MAX_OPTIONS: Uint<8> = 8;
+
+/// The voter's choice, held by the local wallet and fed into proof generation.
+/// Declared as a witness rather than a circuit parameter precisely so that it
+/// stays out of the transaction. The TypeScript driver supplies it.
+witness secretBallot(): Uint<8>;
+
+/// Creates the poll. Both arguments are public poll metadata, so both are
+/// deliberately disclosed — a poll nobody can read is not a poll.
+constructor(pollTitle: Opaque<"string">, options: Uint<8>) {
+  assert(options >= 2, "a poll needs at least two options");
+  assert(options <= MAX_OPTIONS, "a poll supports at most eight options");
+
+  // disclose: poll metadata is public by design (see the table above).
+  title = disclose(pollTitle);
+  optionCount = disclose(options);
+
+  // Every counter slot is created up front. Slots at or above `optionCount`
+  // stay at zero forever: `vote` rejects any ballot that could reach them.
+  for (const i of 0..MAX_OPTIONS) {
+    tallies.insertDefault(i as Uint<8>);
+  }
+}
+
+/// Casts one ballot.
+///
+/// Takes no parameters on purpose: the choice comes from the witness, so the
+/// transaction carries a proof and nothing else.
+export circuit vote(): [] {
+  const choice = secretBallot();
+
+  // The range check is the whole point of the proof. It runs against the
+  // private value, inside the circuit, before anything is disclosed.
+  assert(choice < optionCount, "ballot is outside the poll's option range");
+
+  // disclose: this is the sanctioned disclosure — the increment of a public
+  // tally. Nothing else about the voter or the ballot crosses this line.
+  tallies.lookup(disclose(choice)).increment(1);
+
+  totalVotes.increment(1);
+}
