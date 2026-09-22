@@ -1,4 +1,4 @@
-pragma language_version 0.25;
+pragma language_version 0.23;
 
 import CompactStandardLibrary;
 
@@ -49,10 +49,6 @@ export ledger tallies: Map<Uint<8>, Counter>;
 /// counters sum to the number of votes cast, with no gaps or double counts.
 export ledger totalVotes: Counter;
 
-/// Upper bound on options. Fixed at compile time so the constructor's
-/// initialisation loop has a bound the compiler can unroll.
-const MAX_OPTIONS: Uint<8> = 8;
-
 /// The voter's choice, held by the local wallet and fed into proof generation.
 /// Declared as a witness rather than a circuit parameter precisely so that it
 /// stays out of the transaction. The TypeScript driver supplies it.
@@ -62,7 +58,7 @@ witness secretBallot(): Uint<8>;
 /// deliberately disclosed — a poll nobody can read is not a poll.
 constructor(pollTitle: Opaque<"string">, options: Uint<8>) {
   assert(options >= 2, "a poll needs at least two options");
-  assert(options <= MAX_OPTIONS, "a poll supports at most eight options");
+  assert(options <= 8, "a poll supports at most eight options");
 
   // disclose: poll metadata is public by design (see the table above).
   title = disclose(pollTitle);
@@ -70,7 +66,8 @@ constructor(pollTitle: Opaque<"string">, options: Uint<8>) {
 
   // Every counter slot is created up front. Slots at or above `optionCount`
   // stay at zero forever: `vote` rejects any ballot that could reach them.
-  for (const i of 0..MAX_OPTIONS) {
+  // The bound is a literal because the loop has to unroll at compile time.
+  for (const i of 0..8) {
     tallies.insertDefault(i as Uint<8>);
   }
 }
