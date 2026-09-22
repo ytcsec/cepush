@@ -24,10 +24,10 @@ Last updated: 2026-09-22
 
 | # | Requirement | State |
 |---|-------------|-------|
-| 1 | Lace connect / disconnect implemented | ✓ done — connector v4.0.1, UUID discovery |
-| 2 | Circuit called successfully from the frontend | ✗ **not implemented** — see below |
-| 3 | An observable privacy behaviour | ◐ the UI claim and the private-ballot handling are in place; nothing is proved yet because (2) is open |
-| 4 | Contract deployed to Preprod, verifiable address | ✗ **blocked — owner** |
+| 1 | Lace connect / disconnect implemented | ✓ done |
+| 2 | Circuit called successfully from the frontend | ◐ **written and type-checked, not yet run live** |
+| 3 | An observable privacy behaviour | ✓ done — the ballot is a witness, never an argument |
+| 4 | Contract deployed to Preprod, verifiable address | ✗ **blocked — needs a funded wallet** |
 | 5 | Minimum 8 meaningful commits | ✓ |
 
 ## L2 — submission checklist
@@ -35,44 +35,49 @@ Last updated: 2026-09-22
 | # | Item | State |
 |---|------|-------|
 | 1 | Public GitHub repository with README | ✓ |
-| 2 | Live demo link | ✗ deploy the site once (2) and (4) land |
+| 2 | Live demo link | ✗ deploy the site once (4) lands |
 | 3 | Deployed Preprod address, verifiable on-chain | ✗ blocked — owner |
-| 4 | Demo video: wallet connect + successful circuit call | ✗ blocked — owner, needs (2) |
+| 4 | Demo video: wallet connect + successful circuit call | ✗ blocked — owner |
 | 5 | README documenting the privacy claim | ✓ |
 | 6 | Minimum 8 meaningful commits | ✓ |
 
 ---
 
-## What the frontend does today
+## What the frontend does
 
-`npm run dev`, or `npm run build` for a production bundle. The build is clean:
-`tsc --noEmit` and `vite build` both pass with zero errors.
+`npm run dev`, or `npm run build`. Both `tsc --noEmit` and `vite build` pass with zero
+errors and no warnings.
 
 - **Wallet discovery** — enumerates `window.midnight`, because connector v4 wallets
   register under a freshly minted UUID rather than a fixed key. Polls briefly, since
   extensions inject themselves after first render.
 - **Connect** — `wallet.connect(networkId)`, then verifies `getConnectionStatus()`
   actually landed on the expected network.
-- **Disconnect** — the connector exposes no revoke call, so the app forgets the session
-  it was handed. Permissions are managed inside the wallet.
-- **Error states** — no wallet installed, request declined, network mismatch, and
-  unknown wallet errors, each with its own message.
-- **The ballot** — held in component state, never logged, never stored, cleared as soon
-  as the submit handler is done with it.
+- **Disconnect** — the connector exposes no revoke call, so the app forgets the session.
+- **Error states** — no wallet, declined, network mismatch, proof failure, unknown.
+- **Providers** — all six are built from the connected wallet. The wallet itself supplies
+  the indexer and proof-server endpoints through `getConfiguration()`, so the app does
+  not have to be configured with them separately.
+- **The wallet bridge** — the connector speaks serialised transaction strings while
+  Midnight.js speaks ledger `Transaction` objects, and the SDK ships no adapter. The
+  translation is in `src/lib/providers.ts`.
+- **Deploy** — a one-shot panel, shown only when the build has no contract address.
+- **Vote** — `findDeployedContract`, then `callTx.vote()`. The circuit takes no
+  arguments: the ballot travels as a witness.
+- **The ballot** — written to private state immediately before proving and deleted
+  immediately after, under a password that exists only in memory for that page load.
+  Never logged, never rendered back, never sent as an argument.
 
-## What it does not do yet
+### How far this is verified
 
-`castVote` in `src/lib/contract.ts` validates the ballot range and then refuses,
-because there is no contract to call. Two things are missing, in this order:
-
-1. **A deployed contract address.** Blocked on the faucet.
-2. **The provider bundle.** Midnight.js needs six providers — private state, public
-   data, zk config, proof, wallet and midnight. Five are straightforward factory calls.
-   The sixth, the bridge from the DApp connector to `WalletProvider`/`MidnightProvider`,
-   has no helper in the SDK: the connector speaks serialised transaction strings while
-   midnight-js speaks `UnboundTransaction` objects, and that glue has to be written by
-   hand. It cannot be verified without a deployed contract, a funded wallet, Lace, and a
-   running proof server, so it is deliberately not guessed at yet.
+| Layer | Evidence |
+|---|---|
+| Contract logic | 10 tests, passing |
+| Compile | exit 0, artefacts committed |
+| Types across the whole SDK surface | `tsc --noEmit` clean |
+| Bundle, WebAssembly included | `vite build` clean |
+| Artefact URLs | provider expects `keys/<id>.prover` and `zkir/<id>.bzkir`; the build emits exactly that |
+| **A real circuit call** | **not yet** — needs a deployed contract, a funded wallet, Lace and a running proof server |
 
 ---
 
@@ -93,8 +98,10 @@ Owner actions, in order:
 
 1. Fund a wallet at the Preprod faucet — https://midnight-tmnight-preprod.nethermind.dev/
 2. Start the proof server — `npm run proof-server`, keep the terminal open.
-3. Deploy and capture the address.
-4. Put the address in `.env` as `VITE_CONTRACT_ADDRESS` and in the README table.
+3. Run the app (`npm run dev`), connect Lace, and press **Deploy the poll**. The panel
+   only appears while the build has no address, and the connected wallet pays the fee.
+4. Put the address it returns in `.env` as `VITE_CONTRACT_ADDRESS` and in the README
+   table, then rebuild.
 
 ---
 
@@ -122,5 +129,9 @@ Matches the official support matrix for the 0.31.1 compiler line.
 - **2026-09-22** — Target compiler line is `compact update 0.31`. Compiler 0.34 exists
   but targets ledger 9, which is not deployed on public networks yet.
 - **2026-09-22** — Compile output goes to `managed/` at the repository root, committed.
-- **2026-09-22** — The wallet bridge is left unwritten rather than guessed. Shipping
-  unverifiable glue would read as progress while being untested code.
+- **2026-09-22** — The wallet bridge is written against the SDK's own type definitions
+  rather than from documentation, and the whole chain type-checks. That is evidence, not
+  proof: it still has to meet a live network.
+- **2026-09-22** — Deploying happens from the app through Lace rather than from a script
+  with its own seed phrase. It reuses the provider bundle that already exists and keeps
+  key material in the wallet, where it belongs.

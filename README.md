@@ -108,10 +108,12 @@ A React + Vite frontend talks to Lace through the DApp Connector API (v4.0.1).
 ```
 src/
 ├── lib/wallet.ts          discovery, connect, typed errors
-├── lib/contract.ts        the contract interface and the poll definition
+├── lib/providers.ts       the six Midnight.js providers, and the wallet bridge
+├── lib/contract.ts        deploy, vote, and the witness
 ├── hooks/useWallet.ts     connect / disconnect as React state
 ├── components/
 │   ├── WalletConnect.tsx  wallet panel and every error state
+│   ├── DeployPanel.tsx    one-shot deploy, only while there is no address
 │   └── CircuitCall.tsx    the ballot panel
 └── App.tsx
 ```
@@ -131,11 +133,24 @@ handed; permissions live in the wallet itself.
 failure, and unknown wallet errors each get their own message rather than a generic
 failure.
 
+**Providers.** Midnight.js needs six: private state, public data, zk config, proof,
+wallet and midnight. The wallet itself supplies the indexer and proof-server endpoints
+through `getConfiguration()`, so the app is not separately configured with them. The
+last two have no adapter in the SDK — the connector takes and returns serialised
+transaction strings while Midnight.js works with ledger `Transaction` objects — so that
+translation lives in `src/lib/providers.ts`.
+
+**Voting.** `findDeployedContract`, then `callTx.vote()`. The circuit takes no
+arguments at all: the ballot reaches it as a witness, so the transaction carries a proof
+and nothing else.
+
 ### The privacy claim, in the UI
 
-The ballot is held in component state and nowhere else. It is never written to a log,
-never put in storage, never sent as a circuit argument, and it is cleared the moment the
-submit handler is finished with it. The panel says so, next to the button that uses it:
+The ballot is held in component state, and in the private state store for exactly as
+long as proving takes — written immediately before, deleted immediately after, under a
+password that exists only in memory for that page load. It is never written to a log,
+never rendered back, and never sent as a circuit argument. The panel says so, next to
+the button that uses it:
 
 > 🛡 Proved without revealing your input — your choice stays on this device and is never
 > sent to the contract.
