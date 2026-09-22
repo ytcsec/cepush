@@ -31,8 +31,10 @@ export function DeployPanel({ session }: Props) {
       setPhase({ kind: 'done', address });
     } catch (e) {
       // Show the whole cause chain: the outermost message names the asset that
-      // could not be read, never the reason it could not be read.
-      setPhase({ kind: 'error', message: describe(e) || 'The deploy failed.' });
+      // could not be read, never the reason it could not be read. Keep the raw
+      // object in the console too, for anything the formatter cannot reach.
+      console.error('deploy failed', e);
+      setPhase({ kind: 'error', message: describe(e) || 'The deploy failed, and threw nothing describable.' });
     }
   }
 

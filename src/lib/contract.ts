@@ -46,11 +46,31 @@ export type VoteOutcome = {
 
 /** Walks the cause chain, because the outermost message is rarely the useful one. */
 
+function describeOne(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value instanceof Error) {
+    // Connector failures arrive as Errors carrying a code and a reason; the
+    // plain message on its own is often empty.
+    const api = value as { code?: string; reason?: string };
+    const extra = [api.code, api.reason].filter(Boolean).join(': ');
+    return [value.name, value.message, extra].filter(Boolean).join(' · ');
+  }
+  if (typeof value === 'object' && value !== null) {
+    try {
+      return JSON.stringify(value, (_k, v) => (typeof v === 'bigint' ? v.toString() : v)).slice(0, 500);
+    } catch {
+      return Object.prototype.toString.call(value);
+    }
+  }
+  return String(value);
+}
+
 export function describe(cause: unknown): string {
   const parts: string[] = [];
   let current: unknown = cause;
-  for (let depth = 0; current instanceof Error && depth < 5; depth += 1) {
-    if (current.message && !parts.includes(current.message)) parts.push(current.message);
+  for (let depth = 0; current !== null && current !== undefined && depth < 6; depth += 1) {
+    const text = describeOne(current).trim();
+    if (text && text !== 'Error' && !parts.includes(text)) parts.push(text);
     current = (current as { cause?: unknown }).cause;
   }
   return parts.join(' — ');
