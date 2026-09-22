@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { largestUnshielded, useBalances } from '../hooks/useBalances';
+import { formatAmount, largestUnshielded, useBalances } from '../hooks/useBalances';
 import { truncateAddress } from '../lib/wallet';
 import type { useWallet } from '../hooks/useWallet';
 
@@ -65,11 +65,11 @@ export function WalletConnect({ status, session, error, connect, disconnect, net
           <div className="balances">
             <div>
               <span className="muted">tNIGHT</span>
-              <strong>{balances ? largestUnshielded(balances).toString() : '—'}</strong>
+              <strong>{balances ? formatAmount(largestUnshielded(balances)) : '—'}</strong>
             </div>
             <div>
               <span className="muted">tDUST</span>
-              <strong>{balances ? balances.dust.balance.toString() : '—'}</strong>
+              <strong>{balances ? formatAmount(balances.dust.balance) : '—'}</strong>
             </div>
             <button className="button button--ghost" onClick={() => void refresh()} disabled={loadingBalances}>
               {loadingBalances ? 'Checking…' : 'Refresh'}
@@ -80,7 +80,7 @@ export function WalletConnect({ status, session, error, connect, disconnect, net
             <p className="notice notice--not-deployed">
               {largestUnshielded(balances) === 0n
                 ? 'No tNIGHT yet. The faucet can take a minute; press Refresh.'
-                : 'tNIGHT has arrived but no tDUST has been generated. Fees are paid in tDUST — use Generate tDUST in Lace to register the NIGHT, then wait a moment and Refresh.'}
+                : 'tNIGHT has arrived but no tDUST has been generated. In Lace the step is called designation: open the Midnight tokens page, find the "Your tNIGHT Designation" card, press "Generate tDUST", designate the amount to your own Dust address and send. It takes about three blocks, then press Refresh.'}
             </p>
           )}
 

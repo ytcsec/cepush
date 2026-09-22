@@ -51,3 +51,20 @@ export function useBalances(session: WalletSession | null) {
 /** Largest unshielded holding, which on Preprod is the faucet's tNIGHT. */
 export const largestUnshielded = (b: Balances | null): bigint =>
   b === null ? 0n : Object.values(b.unshielded).reduce((max, v) => (v > max ? v : max), 0n);
+
+/** Both NIGHT and DUST are quoted in millionths. */
+const DECIMALS = 6n;
+const SCALE = 10n ** DECIMALS;
+
+/**
+ * Renders a base-unit amount as a readable figure. Showing the raw integer
+ * makes 5,000 tokens look like five billion.
+ */
+export function formatAmount(raw: bigint): string {
+  const whole = raw / SCALE;
+  const fraction = raw % SCALE;
+  const grouped = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (fraction === 0n) return grouped;
+  const decimals = fraction.toString().padStart(Number(DECIMALS), '0').replace(/0+$/, '');
+  return `${grouped}.${decimals}`;
+}
