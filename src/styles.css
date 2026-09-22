@@ -147,3 +147,13 @@ fieldset:disabled { opacity: 0.5; }
   .button { width: 100%; text-align: center; }
   .button--ghost { width: auto; }
 }
+
+.fund {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--panel-edge);
+  font-size: 0.9rem;
+}
+
+.fund p { margin: 0 0 0.6rem; }
+.fund-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }

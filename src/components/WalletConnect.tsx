@@ -1,11 +1,23 @@
+import { useState } from 'react';
+
 import { truncateAddress } from '../lib/wallet';
 import type { useWallet } from '../hooks/useWallet';
 
 type Props = ReturnType<typeof useWallet>;
 
 const LACE_URL = 'https://www.lace.io/';
+const FAUCET_URL = 'https://midnight-tmnight-preprod.nethermind.dev/';
 
 export function WalletConnect({ status, session, error, connect, disconnect, networkId }: Props) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyAddress() {
+    if (!session) return;
+    await navigator.clipboard.writeText(session.address);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  }
+
   if (status === 'detecting') {
     return (
       <section className="panel" aria-busy="true">
@@ -46,6 +58,26 @@ export function WalletConnect({ status, session, error, connect, disconnect, net
         <p className="address" title={session.address}>
           {truncateAddress(session.address)}
         </p>
+
+        <div className="fund">
+          <p className="muted">
+            This is your <strong>unshielded</strong> address — the one the faucet wants.
+            It rejects shielded and DUST addresses.
+          </p>
+          <div className="fund-row">
+            <button className="button button--ghost" onClick={copyAddress}>
+              {copied ? 'Copied' : 'Copy address'}
+            </button>
+            <a className="button button--ghost" href={FAUCET_URL} target="_blank" rel="noreferrer noopener">
+              Open the faucet
+            </a>
+          </div>
+          <p className="muted">
+            The faucet sends <strong>tNIGHT</strong>, not tDUST. Fees are paid in tDUST, so
+            afterwards use <strong>Generate tDUST</strong> in Lace to register the NIGHT —
+            unregistered NIGHT generates nothing, and the deploy will fail with no fees.
+          </p>
+        </div>
       </section>
     );
   }
