@@ -29,10 +29,10 @@ the multi-option mode. Track: **Governance**.
 
 | Network | Address | Deployed |
 |---------|---------|----------|
-| Preprod | `pending — see Status below` | — |
+| Preprod | `not yet deployed` | — |
 
-> The address lands here as soon as the contract is deployed. See **Status** for what
-> is currently blocking the deploy.
+> The address lands here with the first Preprod deploy. Progress against the level
+> roadmap is tracked in [STATUS.md](STATUS.md).
 
 ---
 
@@ -118,16 +118,6 @@ npm run proof-server        # docker, listens on :6300
 | circuit logic | only the chosen option increments, by one; out-of-range ballots are rejected |
 | state transition | the ledger after a sequence of votes; counters always sum to `totalVotes` |
 | privacy | the ballot never reaches the ledger, the circuit returns nothing, vote order is unrecoverable |
-
----
-
-## Status
-
-Tracked in **[STATUS.md](STATUS.md)**. Current level: **L1**.
-
-The contract, the tests and the docs are written. The compile and the deploy are
-waiting on the Linux toolchain, which needs a WSL2/Ubuntu distro on this machine —
-the `compact` compiler ships no Windows binary.
 
 ---
 
