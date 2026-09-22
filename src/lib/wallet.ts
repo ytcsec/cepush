@@ -61,6 +61,12 @@ export type WalletSession = {
   readonly apiVersion: string;
   readonly address: string;
   readonly configuration: Configuration;
+  /**
+   * Midnight.js asks for these synchronously, but the connector only hands them
+   * over through a promise, so they are fetched once at connect time and cached.
+   */
+  readonly coinPublicKey: string;
+  readonly encryptionPublicKey: string;
 };
 
 /**
@@ -85,8 +91,9 @@ export async function connectWallet(networkId: string = NETWORK_ID): Promise<Wal
   if (status.status !== 'connected') throw new WalletRejectedError();
   if (status.networkId !== networkId) throw new NetworkMismatchError(status.networkId, networkId);
 
-  const [{ unshieldedAddress }, configuration] = await Promise.all([
+  const [{ unshieldedAddress }, shielded, configuration] = await Promise.all([
     api.getUnshieldedAddress(),
+    api.getShieldedAddresses(),
     api.getConfiguration(),
   ]);
 
@@ -97,6 +104,8 @@ export async function connectWallet(networkId: string = NETWORK_ID): Promise<Wal
     apiVersion: wallet.apiVersion,
     address: unshieldedAddress,
     configuration,
+    coinPublicKey: shielded.shieldedCoinPublicKey,
+    encryptionPublicKey: shielded.shieldedEncryptionPublicKey,
   };
 }
 
