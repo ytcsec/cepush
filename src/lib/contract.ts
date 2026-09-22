@@ -4,7 +4,17 @@
  * The ballot never appears in this module's inputs as a circuit argument. It is
  * handed to the witness at proof time and dropped immediately afterwards.
  */
-import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
+import type { WitnessContext } from '@midnight-ntwrk/compact-runtime';
+import * as CompiledContract from '@midnight-ntwrk/compact-js/effect/CompiledContract';
+import { deployContract, findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
+
+import { Contract, type Ledger } from '../../managed/cepush/contract/index.js';
+import {
+  createProviders,
+  PRIVATE_STATE_ID,
+  type CepushPrivateState,
+} from './providers';
+import type { WalletSession } from './wallet';
 
 /** Filled in after the Preprod deploy. Empty means "not wired up yet". */
 export const CONTRACT_ADDRESS: string = import.meta.env.VITE_CONTRACT_ADDRESS ?? '';
@@ -50,7 +60,28 @@ export class ContractNotDeployedError extends Error {
  * `option` is the private input. It is passed straight into proof generation
  * and is never logged, stored, or returned.
  */
-export async function castVote(_api: ConnectedAPI, option: number): Promise<VoteOutcome> {
+/**
+ * The witness the contract asks for. It reads the ballot out of private state
+ * and hands it to the prover. Nothing here writes, logs or returns it.
+ */
+const witnesses = {
+  secretBallot: ({
+    privateState,
+  }: WitnessContext<Ledger, CepushPrivateState>): [CepushPrivateState, bigint] => [
+    privateState,
+    BigInt(privateState.ballot),
+  ],
+};
+
+// The assets path names the folder the compiled circuits live in. In the
+// browser the artefacts are fetched over HTTP by the zk config provider, which
+// already knows its own base URL, so this only has to identify the contract.
+const compiledContract = CompiledContract.make('cepush', Contract).pipe(
+  CompiledContract.withWitnesses(witnesses),
+  CompiledContract.withCompiledFileAssets('cepush'),
+);
+
+export async function castVote(session: WalletSession, option: number): Promise<VoteOutcome> {
   if (!isDeployed()) throw new ContractNotDeployedError();
   if (!Number.isInteger(option) || option < 0 || option >= POLL.options.length) {
     // Mirrors the circuit's own range check, so an impossible ballot never
@@ -58,5 +89,47 @@ export async function castVote(_api: ConnectedAPI, option: number): Promise<Vote
     throw new ProofFailedError(new Error('ballot is outside the poll range'));
   }
 
-  throw new ContractNotDeployedError();
+  const providers = createProviders(session);
+
+  try {
+    const contract = await findDeployedContract(providers, {
+      compiledContract,
+      contractAddress: CONTRACT_ADDRESS,
+      privateStateId: PRIVATE_STATE_ID,
+      initialPrivateState: { ballot: option },
+    });
+
+    // `vote` takes no arguments: the ballot travels as a witness, so the call
+    // itself carries nothing about the choice.
+    const result = await contract.callTx.vote();
+    return { txId: result.public.txId };
+  } catch (e) {
+    throw new ProofFailedError(e);
+  } finally {
+    // The ballot has served its purpose. Drop it, whatever happened.
+    await providers.privateStateProvider.remove(PRIVATE_STATE_ID).catch(() => undefined);
+  }
+}
+
+/**
+ * Puts a fresh poll on chain.
+ *
+ * A one-shot bootstrap, not a feature: the app needs an address to point at,
+ * and the connected wallet is already able to pay for it. Both constructor
+ * arguments are public poll metadata.
+ */
+export async function deployPoll(session: WalletSession): Promise<string> {
+  const providers = createProviders(session);
+
+  const deployed = await deployContract(providers, {
+    compiledContract,
+    privateStateId: PRIVATE_STATE_ID,
+    initialPrivateState: { ballot: 0 },
+    args: [POLL.title, BigInt(POLL.options.length)],
+  });
+
+  // The bootstrap ballot was never voted, but leave nothing behind regardless.
+  await providers.privateStateProvider.remove(PRIVATE_STATE_ID).catch(() => undefined);
+
+  return deployed.deployTxData.public.contractAddress;
 }

@@ -34,7 +34,7 @@ export function CircuitCall({ session }: Props) {
 
     setPhase({ kind: 'proving' });
     try {
-      const { txId } = await castVote(session.api, ballot);
+      const { txId } = await castVote(session, ballot);
       setPhase({ kind: 'submitted', txId });
     } catch (e) {
       if (e instanceof ContractNotDeployedError) {
