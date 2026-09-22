@@ -1,4 +1,5 @@
 import { CircuitCall } from './components/CircuitCall';
+import { DeployPanel } from './components/DeployPanel';
 import { WalletConnect } from './components/WalletConnect';
 import { useWallet } from './hooks/useWallet';
 import { CONTRACT_ADDRESS, isDeployed } from './lib/contract';
@@ -15,6 +16,7 @@ export default function App() {
 
       <main>
         <WalletConnect {...wallet} />
+        <DeployPanel session={wallet.session} />
         <CircuitCall session={wallet.session} />
       </main>
 
