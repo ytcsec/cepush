@@ -1,0 +1,15 @@
+# The toolchain runs under WSL/Linux while the checkout lives on NTFS.
+# Normalise to LF so shell scripts and the compiler never see CRLF.
+* text=auto eol=lf
+
+*.compact  text eol=lf
+*.sh       text eol=lf
+*.ts       text eol=lf
+*.tsx      text eol=lf
+*.json     text eol=lf
+*.md       text eol=lf
+*.yml      text eol=lf
+
+# Compiled zk artifacts are binary.
+*.bin      binary
+*.zkir     binary
