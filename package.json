@@ -17,7 +17,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "proof-server": "docker run -p 6300:6300 midnightntwrk/proof-server:8.1.0 -- midnight-proof-server -v"
+    "proof-server": "docker run -d --name cepush-proof-server --restart unless-stopped -p 6300:6300 midnightntwrk/proof-server:8.1.0 -- midnight-proof-server -v",
+    "proof-server:stop": "docker rm -f cepush-proof-server",
+    "proof-server:status": "curl -s http://localhost:6300/"
   },
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "0.16.0",

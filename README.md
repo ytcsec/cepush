@@ -219,10 +219,13 @@ See **[docs/SETUP-WINDOWS.md](docs/SETUP-WINDOWS.md)**.
 
 ### Proof server
 
-Required for deploys and for voting. Keep it running in its own terminal:
+Required for deploys and for voting. It runs as a background container that comes back
+after a reboot, so this is a one-time command:
 
 ```bash
-npm run proof-server        # docker, listens on :6300
+npm run proof-server         # start it, detached, on :6300
+npm run proof-server:status  # {"status":"ok", ...}
+npm run proof-server:stop    # remove it
 ```
 
 ### Funding a wallet on Preprod

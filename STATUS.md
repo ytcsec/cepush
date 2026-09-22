@@ -104,7 +104,9 @@ Owner actions, in order:
 3. **Register the NIGHT for DUST generation** — *Generate tDUST* in Lace. Fees are paid
    in tDUST, and NIGHT that has not been registered generates none. Skipping this looks
    like a funded wallet that still cannot pay for anything.
-4. Start the proof server — `npm run proof-server`, keep the terminal open.
+4. ~~Start the proof server~~ — **already running** as the detached container
+   `cepush-proof-server` on `:6300`, with a restart policy, so it survives a reboot.
+   Check it any time with `npm run proof-server:status`.
 5. Run the app (`npm run dev`), connect Lace, and press **Deploy the poll**. The panel
    only appears while the build has no address, and the connected wallet pays the fee.
 6. Put the address it returns in `.env` as `VITE_CONTRACT_ADDRESS` and in the README
