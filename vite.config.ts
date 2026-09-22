@@ -35,6 +35,11 @@ function compiledArtefacts(): Plugin {
         const rel = decodeURIComponent((req.url ?? '/').split('?')[0] ?? '/');
         // Refuse to walk out of the artefact directory.
         if (rel.includes('..')) return next();
+        // Only the opaque binaries belong to this handler. The compiled
+        // contract module under contract/ is a real ES module that Vite has to
+        // transform — serving it as octet-stream makes the browser refuse it
+        // and the page renders nothing.
+        if (!/^\/(keys|zkir)\//.test(rel)) return next();
         const file = join(MANAGED_DIR, rel);
         res.setHeader('Content-Type', 'application/octet-stream');
         createReadStream(file)
@@ -84,7 +89,6 @@ export default defineConfig({
     chunkSizeWarningLimit: 1536,
   },
   optimizeDeps: {
-    exclude: ['@midnight-ntwrk/ledger-v8'],
     esbuildOptions: { target: 'esnext' },
   },
 });
