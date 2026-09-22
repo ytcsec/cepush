@@ -31,13 +31,25 @@ export class WalletRejectedError extends Error {
   }
 }
 
-/** The wallet is connected, but to a different network than this build targets. */
+/**
+ * The wallet is on a different network than this build targets.
+ *
+ * Lace raises this itself, as an `InvalidRequest` reading "Network ID mismatch",
+ * without saying which network it is actually on — so `walletNetwork` is only
+ * known when we got far enough to ask.
+ */
 export class NetworkMismatchError extends Error {
   constructor(
-    readonly walletNetwork: string,
     readonly expected: string,
+    readonly walletNetwork?: string,
   ) {
-    super(`Wallet is on "${walletNetwork}", but this app talks to "${expected}". Switch networks in Lace and reconnect.`);
+    super(
+      (walletNetwork
+        ? `Lace is on "${walletNetwork}", but this app talks to "${expected}". `
+        : `Lace is not on "${expected}". `) +
+        'Open Lace → Settings → Midnight, set Network to Preprod, then reconnect. ' +
+        'While you are there, set Proof server to Local (http://localhost:6300).',
+    );
     this.name = 'NetworkMismatchError';
   }
 }
@@ -81,15 +93,23 @@ export async function connectWallet(networkId: string = NETWORK_ID): Promise<Wal
   try {
     api = await wallet.connect(networkId);
   } catch (e) {
-    if (isApiError(e) && (e.code === ErrorCodes.Rejected || e.code === ErrorCodes.PermissionRejected)) {
-      throw new WalletRejectedError();
+    if (isApiError(e)) {
+      if (e.code === ErrorCodes.Rejected || e.code === ErrorCodes.PermissionRejected) {
+        throw new WalletRejectedError();
+      }
+      // Lace refuses the connection outright when its active network is not the
+      // one the DApp asked for. Without this the message lands in the generic
+      // bucket and tells the user nothing they can act on.
+      if (e.code === ErrorCodes.InvalidRequest && /network/i.test(e.message ?? '')) {
+        throw new NetworkMismatchError(networkId);
+      }
     }
     throw e;
   }
 
   const status = await api.getConnectionStatus();
   if (status.status !== 'connected') throw new WalletRejectedError();
-  if (status.networkId !== networkId) throw new NetworkMismatchError(status.networkId, networkId);
+  if (status.networkId !== networkId) throw new NetworkMismatchError(networkId, status.networkId);
 
   const [{ unshieldedAddress }, shielded, configuration] = await Promise.all([
     api.getUnshieldedAddress(),
