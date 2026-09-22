@@ -1,0 +1,26 @@
+{
+  "name": "cepush",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Private, verifiable voting for communities on Midnight",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "compact": "compact compile contracts/cepush.compact contracts/managed/cepush",
+    "compact:version": "compact --version",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "proof-server": "docker run -p 6300:6300 midnightntwrk/proof-server:8.1.0 -- midnight-proof-server -v"
+  },
+  "dependencies": {
+    "@midnight-ntwrk/compact-runtime": "0.16.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
