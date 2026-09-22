@@ -13,5 +13,5 @@
     "types": ["vitest/globals"]
   },
   "include": ["contracts/**/*.ts", "tests/**/*.ts", "src/**/*.ts"],
-  "exclude": ["node_modules", "contracts/managed/**/zkir", "contracts/managed/**/keys"]
+  "exclude": ["node_modules", "managed/**/zkir", "managed/**/keys"]
 }

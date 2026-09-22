@@ -3,7 +3,7 @@
  *
  * Drives the compiled circuits in-process, without a node or a proof server, so
  * the test suite stays fast. Requires `npm run compact` to have produced
- * `contracts/managed/cepush` first.
+ * `managed/cepush` first.
  */
 import {
   type CircuitContext,
@@ -18,7 +18,7 @@ import {
   Contract,
   ledger,
   type Ledger,
-} from '../contracts/managed/cepush/contract/index.cjs';
+} from '../managed/cepush/contract/index.cjs';
 
 /**
  * Everything the voter keeps to themselves. This object never leaves the

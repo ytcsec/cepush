@@ -9,7 +9,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "compact": "compact compile contracts/cepush.compact contracts/managed/cepush",
+    "compact": "compact compile contracts/cepush.compact managed/cepush",
     "compact:version": "compact --version",
     "test": "vitest run",
     "test:watch": "vitest",
