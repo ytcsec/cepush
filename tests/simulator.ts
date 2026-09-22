@@ -1,15 +1,14 @@
 /**
  * Test harness for the cepush contract.
  *
- * Drives the compiled circuits in-process, without a node or a proof server, so
- * the test suite stays fast. Requires `npm run compact` to have produced
+ * Drives the compiled circuits in-process, without a node and without a proof
+ * server, so the suite stays fast. Requires `npm run compact` to have produced
  * `managed/cepush` first.
  */
 import {
   type CircuitContext,
-  QueryContext,
-  constructorContext,
-  emptyZswapLocalState,
+  createCircuitContext,
+  createConstructorContext,
   sampleContractAddress,
   type WitnessContext,
 } from '@midnight-ntwrk/compact-runtime';
@@ -18,11 +17,11 @@ import {
   Contract,
   ledger,
   type Ledger,
-} from '../managed/cepush/contract/index.cjs';
+} from '../managed/cepush/contract/index.js';
 
 /**
- * Everything the voter keeps to themselves. This object never leaves the
- * local process: it feeds proof generation and nothing else.
+ * Everything the voter keeps to themselves. This object never leaves the local
+ * process: it feeds proof generation and nothing else.
  */
 export type CepushPrivateState = {
   /** The chosen option index. Private. */
@@ -31,8 +30,8 @@ export type CepushPrivateState = {
 
 /**
  * Witness implementations. The contract asks for `secretBallot()`; we answer
- * from private state. Note there is no path from here into the ledger except
- * through the circuit's own `disclose()`.
+ * from private state. There is no path from here into the ledger except through
+ * the circuit's own `disclose()`.
  */
 export const witnesses = {
   secretBallot: ({
@@ -43,7 +42,8 @@ export const witnesses = {
   ],
 };
 
-const ZERO_NONCE = '0'.repeat(64);
+/** Any well-formed key will do: the contract never looks at who is voting. */
+const COIN_PUBLIC_KEY = '0'.repeat(64);
 
 export class CepushSimulator {
   readonly contract: Contract<CepushPrivateState, typeof witnesses>;
@@ -52,27 +52,23 @@ export class CepushSimulator {
   constructor(title: string, optionCount: number, ballot: number) {
     this.contract = new Contract<CepushPrivateState, typeof witnesses>(witnesses);
 
-    const { currentPrivateState, currentContractState, currentZswapLocalState } =
-      this.contract.initialState(
-        constructorContext({ ballot }, ZERO_NONCE),
-        title,
-        BigInt(optionCount),
-      );
+    const { currentPrivateState, currentContractState } = this.contract.initialState(
+      createConstructorContext<CepushPrivateState>({ ballot }, COIN_PUBLIC_KEY),
+      title,
+      BigInt(optionCount),
+    );
 
-    this.circuitContext = {
+    this.circuitContext = createCircuitContext<CepushPrivateState>(
+      sampleContractAddress(),
+      COIN_PUBLIC_KEY,
+      currentContractState,
       currentPrivateState,
-      currentZswapLocalState,
-      originalState: currentContractState,
-      transactionContext: new QueryContext(
-        currentContractState.data,
-        sampleContractAddress(),
-      ),
-    };
+    );
   }
 
   /** The public ledger, decoded. This is what the whole world can see. */
   public getLedger(): Ledger {
-    return ledger(this.circuitContext.transactionContext.state);
+    return ledger(this.circuitContext.currentQueryContext.state);
   }
 
   /** The local private state. This is what nobody else can see. */
@@ -85,19 +81,17 @@ export class CepushSimulator {
     this.circuitContext = {
       ...this.circuitContext,
       currentPrivateState: { ballot },
-      currentZswapLocalState: emptyZswapLocalState(0),
     };
     return this;
   }
 
   /** Cast one ballot and keep the resulting context. */
   public vote(): Ledger {
-    const result = this.contract.impureCircuits.vote(this.circuitContext);
-    this.circuitContext = result.context;
+    this.voteRaw();
     return this.getLedger();
   }
 
-  /** Cast one ballot and return the raw circuit result, transcript included. */
+  /** Cast one ballot and return the raw circuit result, proof data included. */
   public voteRaw() {
     const result = this.contract.impureCircuits.vote(this.circuitContext);
     this.circuitContext = result.context;
@@ -108,7 +102,7 @@ export class CepushSimulator {
   public tallies(optionCount: number): number[] {
     const state = this.getLedger();
     return Array.from({ length: optionCount }, (_, i) =>
-      Number(state.tallies.lookup(BigInt(i))),
+      Number(state.tallies.lookup(BigInt(i)).read()),
     );
   }
 }
