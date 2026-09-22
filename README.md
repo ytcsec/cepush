@@ -92,18 +92,35 @@ witness, so the transaction carries a proof and nothing else.
 
 ## Running it
 
-The Midnight toolchain has no Windows build, so on Windows everything runs inside
-WSL2/Ubuntu. Full steps: **[docs/SETUP-WINDOWS.md](docs/SETUP-WINDOWS.md)**.
+### Prerequisites
+
+- **Node.js 22** — pinned in `.nvmrc`, so `nvm use` picks it up
+- **Docker**, running
+- **Compact compiler**, on the 0.31 line:
 
 ```bash
-nvm use 22
+curl --proto '=https' --tlsv1.2 -LsSf   https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+compact update 0.31
 compact --version           # 0.31.x
+```
+
+> Pin to 0.31. The newer 0.34 compiler targets ledger 9, which is not deployed on the
+> public networks yet.
+
+On Windows there is no native build of the toolchain — it runs inside WSL2/Ubuntu.
+Full steps: **[docs/SETUP-WINDOWS.md](docs/SETUP-WINDOWS.md)**.
+
+### Build and test
+
+```bash
 npm install
-npm run compact             # compiles to contracts/managed/cepush
+npm run compact             # compiles to managed/cepush
 npm test                    # 11 tests across logic, state and privacy
 ```
 
-The proof server needs to be running for deploys:
+### Proof server
+
+Required for deploys. Keep it running in its own terminal:
 
 ```bash
 npm run proof-server        # docker, listens on :6300
