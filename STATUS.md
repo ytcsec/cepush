@@ -96,11 +96,18 @@ faucet → funded wallet → deploy → address
 
 Owner actions, in order:
 
-1. Fund a wallet at the Preprod faucet — https://midnight-tmnight-preprod.nethermind.dev/
-2. Start the proof server — `npm run proof-server`, keep the terminal open.
-3. Run the app (`npm run dev`), connect Lace, and press **Deploy the poll**. The panel
+1. **Switch Lace to Preprod** and copy the **unshielded** address — it starts
+   `mn_addr_preprod1`. The app shows it with a copy button once connected. The faucet
+   rejects shielded and DUST addresses.
+2. **Request tokens** at the Preprod faucet —
+   https://midnight-tmnight-preprod.nethermind.dev/ (1,000 tNIGHT per request).
+3. **Register the NIGHT for DUST generation** — *Generate tDUST* in Lace. Fees are paid
+   in tDUST, and NIGHT that has not been registered generates none. Skipping this looks
+   like a funded wallet that still cannot pay for anything.
+4. Start the proof server — `npm run proof-server`, keep the terminal open.
+5. Run the app (`npm run dev`), connect Lace, and press **Deploy the poll**. The panel
    only appears while the build has no address, and the connected wallet pays the fee.
-4. Put the address it returns in `.env` as `VITE_CONTRACT_ADDRESS` and in the README
+6. Put the address it returns in `.env` as `VITE_CONTRACT_ADDRESS` and in the README
    table, then rebuild.
 
 ---

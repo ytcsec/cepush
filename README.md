@@ -219,11 +219,23 @@ See **[docs/SETUP-WINDOWS.md](docs/SETUP-WINDOWS.md)**.
 
 ### Proof server
 
-Required for deploys. Keep it running in its own terminal:
+Required for deploys and for voting. Keep it running in its own terminal:
 
 ```bash
 npm run proof-server        # docker, listens on :6300
 ```
+
+### Funding a wallet on Preprod
+
+1. Switch Lace to **Preprod** and copy the **unshielded** address — it starts
+   `mn_addr_preprod1`. The app shows it with a copy button once connected.
+   The faucet rejects shielded and DUST addresses.
+2. Request tokens at the [Preprod faucet](https://midnight-tmnight-preprod.nethermind.dev/).
+3. In Lace, use **Generate tDUST** to register the NIGHT you just received.
+
+That third step is easy to miss. The faucet sends tNIGHT, fees are paid in tDUST, and
+NIGHT that has not been registered generates no DUST — so an apparently funded wallet
+still cannot pay for a transaction.
 
 ---
 
