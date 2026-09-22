@@ -44,15 +44,25 @@ export type VoteOutcome = {
   readonly txId: string;
 };
 
+/** Walks the cause chain, because the outermost message is rarely the useful one. */
+
+export function describe(cause: unknown): string {
+  const parts: string[] = [];
+  let current: unknown = cause;
+  for (let depth = 0; current instanceof Error && depth < 5; depth += 1) {
+    if (current.message && !parts.includes(current.message)) parts.push(current.message);
+    current = (current as { cause?: unknown }).cause;
+  }
+  return parts.join(' — ');
+}
+
 /** Raised when the proof itself could not be produced. */
 export class ProofFailedError extends Error {
   constructor(cause?: unknown) {
-    super(
-      cause instanceof Error
-        ? `The proof could not be produced: ${cause.message}`
-        : 'The proof could not be produced.',
-    );
+    const detail = describe(cause);
+    super(detail ? `The proof could not be produced: ${detail}` : 'The proof could not be produced.');
     this.name = 'ProofFailedError';
+    this.cause = cause;
   }
 }
 

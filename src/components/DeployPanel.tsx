@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { deployPoll, isDeployed, POLL } from '../lib/contract';
+import { deployPoll, describe, isDeployed, POLL } from '../lib/contract';
 import type { WalletSession } from '../lib/wallet';
 
 type Props = {
@@ -30,10 +30,9 @@ export function DeployPanel({ session }: Props) {
       const address = await deployPoll(session);
       setPhase({ kind: 'done', address });
     } catch (e) {
-      setPhase({
-        kind: 'error',
-        message: e instanceof Error ? e.message : 'The deploy failed.',
-      });
+      // Show the whole cause chain: the outermost message names the asset that
+      // could not be read, never the reason it could not be read.
+      setPhase({ kind: 'error', message: describe(e) || 'The deploy failed.' });
     }
   }
 

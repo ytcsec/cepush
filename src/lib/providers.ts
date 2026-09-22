@@ -100,7 +100,14 @@ export function createProviders(session: WalletSession): CepushProviders {
   // against it, so it has to be set before anything else is built.
   setNetworkId(networkId);
 
-  const zkConfigProvider = new FetchZkConfigProvider<CepushCircuitId>(ZK_CONFIG_BASE);
+  // Pass the platform's fetch explicitly. The provider otherwise defaults to
+  // cross-fetch, and that package resolves to a build that does not work in the
+  // bundle — the artefact request then fails before it is ever made, and the
+  // only symptom is "Failed to read verifier key".
+  const zkConfigProvider = new FetchZkConfigProvider<CepushCircuitId>(
+    ZK_CONFIG_BASE,
+    (input, init) => globalThis.fetch(input as RequestInfo, init),
+  );
 
   return {
     privateStateProvider: levelPrivateStateProvider<typeof PRIVATE_STATE_ID, CepushPrivateState>({
