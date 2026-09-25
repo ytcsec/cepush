@@ -70,6 +70,22 @@ function generateSessionPassword(): string {
 
 const sessionPassword = generateSessionPassword();
 
+/**
+ * Empties the store before an operation.
+ *
+ * The password dies with the page, so anything a previous page load left
+ * behind is unreadable ciphertext — and Midnight.js reads it: finding a
+ * deployed contract first looks up the contract's signing key, and decrypting
+ * one written under an old password fails with a bare `OperationError`.
+ * Clearing is safe because nothing here is meant to outlive the page. The
+ * signing key only authorises verifier-key maintenance, which this contract
+ * never uses, and a fresh one is sampled on the next lookup.
+ */
+export async function resetPrivateStore(provider: CepushProviders['privateStateProvider']): Promise<void> {
+  await provider.clear();
+  await provider.clearSigningKeys();
+}
+
 export type CepushProviders = {
   readonly privateStateProvider: PrivateStateProvider<typeof PRIVATE_STATE_ID, CepushPrivateState>;
   readonly publicDataProvider: PublicDataProvider;

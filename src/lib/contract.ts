@@ -12,6 +12,7 @@ import { Contract, ledger, type Ledger } from '../../managed/cepush/contract/ind
 import {
   createProviders,
   PRIVATE_STATE_ID,
+  resetPrivateStore,
   type CepushPrivateState,
 } from './providers';
 import type { WalletSession } from './wallet';
@@ -132,6 +133,7 @@ export async function castVote(session: WalletSession, option: number): Promise<
   const providers = createProviders(session);
 
   try {
+    await resetPrivateStore(providers.privateStateProvider);
     const contract = await findDeployedContract(providers, {
       compiledContract,
       contractAddress: CONTRACT_ADDRESS,
@@ -160,6 +162,7 @@ export async function castVote(session: WalletSession, option: number): Promise<
  */
 export async function deployPoll(session: WalletSession): Promise<string> {
   const providers = createProviders(session);
+  await resetPrivateStore(providers.privateStateProvider);
 
   const deployed = await deployContract(providers, {
     compiledContract,
