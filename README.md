@@ -39,8 +39,10 @@ Anyone can check the address against the public Preprod indexer:
 curl -s -X POST https://indexer.preprod.midnight.network/api/v3/graphql   -H 'content-type: application/json'   -d '{"query":"{ contractAction(address: \"b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86\") { __typename transaction { hash block { height } } } }"}'
 ```
 
-It answers with a `ContractDeploy` at block 2707858. Progress against the level roadmap
-is tracked in [STATUS.md](STATUS.md).
+The first ballot was cast from the app through Lace on 2026-09-25: a `vote` call at
+block 2708080, transaction `4a465bbc1e36afaf6b17bacda808a29486f27b2184c709340905da52d6e3695c`.
+The same query now answers with that `ContractCall` — entry point `vote`, no arguments.
+Progress against the level roadmap is tracked in [STATUS.md](STATUS.md).
 
 ## Live demo and video
 

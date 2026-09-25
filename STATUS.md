@@ -23,7 +23,7 @@ Last updated: 2026-09-25
 | # | Requirement | State |
 |---|-------------|-------|
 | 1 | Lace connect / disconnect implemented | ✓ done |
-| 2 | Circuit called successfully from the frontend | ◐ deploy proved and submitted from the browser; a live `vote` still to run |
+| 2 | Circuit called successfully from the frontend | ✓ `vote` at block 2708080, from the browser through Lace |
 | 3 | An observable privacy behaviour | ✓ done — the ballot is a witness, never an argument |
 | 4 | Contract deployed to Preprod, verifiable address | ✓ verified against the indexer |
 | 5 | Minimum 8 meaningful commits | ✓ |
@@ -80,20 +80,17 @@ errors and no warnings.
 | Bundle, WebAssembly included | `vite build` clean |
 | Artefact URLs | provider expects `keys/<id>.prover` and `zkir/<id>.bzkir`; the build emits exactly that |
 | Deploy from the browser | ✓ proved, balanced by Lace and accepted at block 2707858 |
-| **A live `vote` call** | **not yet** — the next owner step |
+| A live `vote` call | ✓ block 2708080, tx `4a465bbc…695c`; the public tally reads 1 |
 
 ---
 
 ## Remaining owner steps
 
-1. **Cast a ballot from the app** — connect Lace, pick an option, *Cast ballot*. The
-   receipt and the public tally panel should both update. This closes L2 requirement 2.
-   Keep Docker running: the proof server lives in it.
-2. **Publish the live demo** — import the repository in Vercel with
+1. **Publish the live demo** — import the repository in Vercel with
    `VITE_NETWORK_ID=preprod` and
    `VITE_CONTRACT_ADDRESS=b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86`,
    then put the URL in the README.
-3. **Record the demo video** — connect Lace, cast a ballot, show the receipt and the
+2. **Record the demo video** — connect Lace, cast a ballot, show the receipt and the
    tally moving. Link it in the README.
 
 ---
@@ -131,3 +128,6 @@ Matches the official support matrix for the 0.31.1 compiler line.
 - **2026-09-25** — The private state password is drawn from a mixed alphabet and checked
   against the SDK's own policy. Midnight.js 4.1.1 rejects passwords with fewer than three
   character classes, and the earlier hex password failed every deploy.
+- **2026-09-25** — `onchain-runtime-v3` is pinned to 3.0.0 and hoisted to a single copy.
+  Two copies in the bundle meant state read by Midnight.js failed the contract's own
+  `instanceof` checks, so deploying worked and voting did not.
