@@ -133,7 +133,7 @@ export async function castVote(session: WalletSession, option: number): Promise<
   const providers = createProviders(session);
 
   try {
-    await resetPrivateStore(providers.privateStateProvider);
+    await resetPrivateStore(providers.privateStateProvider, CONTRACT_ADDRESS);
     const contract = await findDeployedContract(providers, {
       compiledContract,
       contractAddress: CONTRACT_ADDRESS,

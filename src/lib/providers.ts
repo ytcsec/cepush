@@ -81,9 +81,18 @@ const sessionPassword = generateSessionPassword();
  * signing key only authorises verifier-key maintenance, which this contract
  * never uses, and a fresh one is sampled on the next lookup.
  */
-export async function resetPrivateStore(provider: CepushProviders['privateStateProvider']): Promise<void> {
-  await provider.clear();
+export async function resetPrivateStore(
+  provider: CepushProviders['privateStateProvider'],
+  contractAddress?: string,
+): Promise<void> {
   await provider.clearSigningKeys();
+  // Private state is scoped by contract, and the provider refuses to touch it
+  // until it knows which one. Before a deploy there is no address yet, and
+  // nothing will be read back from that store until one exists.
+  if (contractAddress !== undefined) {
+    provider.setContractAddress(contractAddress);
+    await provider.clear();
+  }
 }
 
 export type CepushProviders = {
