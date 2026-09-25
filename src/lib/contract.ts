@@ -8,7 +8,7 @@ import type { WitnessContext } from '@midnight-ntwrk/compact-runtime';
 import * as CompiledContract from '@midnight-ntwrk/compact-js/effect/CompiledContract';
 import { deployContract, findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
 
-import { Contract, type Ledger } from '../../managed/cepush/contract/index.js';
+import { Contract, ledger, type Ledger } from '../../managed/cepush/contract/index.js';
 import {
   createProviders,
   PRIVATE_STATE_ID,
@@ -172,4 +172,33 @@ export async function deployPoll(session: WalletSession): Promise<string> {
   await providers.privateStateProvider.remove(PRIVATE_STATE_ID).catch(() => undefined);
 
   return deployed.deployTxData.public.contractAddress;
+}
+
+/** The public side of the poll, exactly as anyone reading the chain sees it. */
+export type PublicTally = {
+  readonly title: string;
+  readonly counts: readonly bigint[];
+  readonly totalVotes: bigint;
+};
+
+/**
+ * Reads the poll's public ledger state from the indexer.
+ *
+ * Everything returned here is public by design. There is no private input to
+ * read and nothing about any individual ballot to find: the ledger holds the
+ * per-option counters and the total, and that is all.
+ */
+export async function readTally(session: WalletSession): Promise<PublicTally | null> {
+  if (!isDeployed()) throw new ContractNotDeployedError();
+
+  const { publicDataProvider } = createProviders(session);
+  const state = await publicDataProvider.queryContractState(CONTRACT_ADDRESS);
+  if (state === null) return null;
+
+  const view = ledger(state.data);
+  const counts: bigint[] = [];
+  for (let i = 0n; i < view.optionCount; i += 1n) {
+    counts.push(view.tallies.member(i) ? view.tallies.lookup(i).read() : 0n);
+  }
+  return { title: view.title, counts, totalVotes: view.totalVotes };
 }
