@@ -11,6 +11,8 @@ import type { WalletSession } from '../lib/wallet';
 
 type Props = {
   readonly session: WalletSession | null;
+  /** Called once a ballot has been accepted, so the public tally can re-read. */
+  readonly onVoted?: () => void;
 };
 
 type Phase =
@@ -19,7 +21,7 @@ type Phase =
   | { readonly kind: 'submitted'; readonly txId: string }
   | { readonly kind: 'error'; readonly message: string; readonly variant: string };
 
-export function CircuitCall({ session }: Props) {
+export function CircuitCall({ session, onVoted }: Props) {
   // The ballot lives here and nowhere else. It is never logged, never put in
   // storage, and is cleared the moment the proof is done with it.
   const [ballot, setBallot] = useState<number | null>(null);
@@ -36,6 +38,7 @@ export function CircuitCall({ session }: Props) {
     try {
       const { txId } = await castVote(session, ballot);
       setPhase({ kind: 'submitted', txId });
+      onVoted?.();
     } catch (e) {
       if (e instanceof ContractNotDeployedError) {
         setPhase({ kind: 'error', message: e.message, variant: 'not-deployed' });
@@ -100,9 +103,19 @@ export function CircuitCall({ session }: Props) {
       )}
 
       {phase.kind === 'submitted' && (
-        <p className="notice notice--ok" role="status">
-          Ballot counted. Transaction <code>{phase.txId}</code>
-        </p>
+        <div className="notice notice--ok" role="status">
+          <strong>Ballot counted.</strong>
+          <dl className="receipt">
+            <dt>Transaction</dt>
+            <dd>
+              <code>{phase.txId}</code>
+            </dd>
+            <dt>Circuit arguments</dt>
+            <dd>none — <code>vote()</code> takes no parameters</dd>
+            <dt>Your ballot</dt>
+            <dd>not in the transaction; proved valid, never sent</dd>
+          </dl>
+        </div>
       )}
 
       {phase.kind === 'error' && (
