@@ -29,10 +29,18 @@ the multi-option mode. Track: **Governance**.
 
 | Network | Address | Deployed |
 |---------|---------|----------|
-| Preprod | `not yet deployed` | — |
+| Preprod | `b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86` | 2026-09-25, block 2707858 |
 
-> The address lands here with the first Preprod deploy. Progress against the level
-> roadmap is tracked in [STATUS.md](STATUS.md).
+Deploy transaction: `7d7b663fc1840747da6e0454edb47b8b178e8a3e9221a50a70f7511c69ee86f6`
+
+Anyone can check the address against the public Preprod indexer:
+
+```bash
+curl -s -X POST https://indexer.preprod.midnight.network/api/v3/graphql   -H 'content-type: application/json'   -d '{"query":"{ contractAction(address: \"b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86\") { __typename transaction { hash block { height } } } }"}'
+```
+
+It answers with a `ContractDeploy` at block 2707858. Progress against the level roadmap
+is tracked in [STATUS.md](STATUS.md).
 
 ## Live demo and video
 
