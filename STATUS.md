@@ -3,9 +3,7 @@
 **Current level: L2 — frontend, Lace on Preprod**
 Last updated: 2026-09-25
 
-> **L1 is not closed yet.** Its deploy requirement is still open, and L2 needs the same
-> deploy. Only the highest *unbroken* level is rewarded, so the deploy is the single
-> most valuable thing left to do. See *The one blocker* below.
+> **Deployed to Preprod on 2026-09-25** at `b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86` (block 2707858). L1 is closed.
 
 ---
 
@@ -16,7 +14,7 @@ Last updated: 2026-09-25
 | 1 | Toolchain installed, contract compiles | ✓ compiler 0.31.1 |
 | 2 | Passing test suite | ✓ 10/10 |
 | 3 | `managed/` directory (circuits + keys) | ✓ committed |
-| 4 | Deployed to Preprod, address visible | ✗ **blocked — owner** |
+| 4 | Deployed to Preprod, address visible | ✓ block 2707858 |
 | 5 | Initial product idea in the README | ✓ |
 | 6 | Minimum 5 meaningful commits | ✓ |
 
@@ -25,9 +23,9 @@ Last updated: 2026-09-25
 | # | Requirement | State |
 |---|-------------|-------|
 | 1 | Lace connect / disconnect implemented | ✓ done |
-| 2 | Circuit called successfully from the frontend | ◐ **written and type-checked, not yet run live** |
+| 2 | Circuit called successfully from the frontend | ◐ deploy proved and submitted from the browser; a live `vote` still to run |
 | 3 | An observable privacy behaviour | ✓ done — the ballot is a witness, never an argument |
-| 4 | Contract deployed to Preprod, verifiable address | ✗ **blocked — needs a funded wallet** |
+| 4 | Contract deployed to Preprod, verifiable address | ✓ verified against the indexer |
 | 5 | Minimum 8 meaningful commits | ✓ |
 
 ## L2 — submission checklist
@@ -36,7 +34,7 @@ Last updated: 2026-09-25
 |---|------|-------|
 | 1 | Public GitHub repository with README | ✓ |
 | 2 | Live demo link | ◐ `vercel.json` ready — import the repo in Vercel once (4) lands |
-| 3 | Deployed Preprod address, verifiable on-chain | ✗ blocked — owner |
+| 3 | Deployed Preprod address, verifiable on-chain | ✓ |
 | 4 | Demo video: wallet connect + successful circuit call | ✗ blocked — owner |
 | 5 | README documenting the privacy claim | ✓ |
 | 6 | Minimum 8 meaningful commits | ✓ |
@@ -81,43 +79,21 @@ errors and no warnings.
 | Types across the whole SDK surface | `tsc --noEmit` clean |
 | Bundle, WebAssembly included | `vite build` clean |
 | Artefact URLs | provider expects `keys/<id>.prover` and `zkir/<id>.bzkir`; the build emits exactly that |
-| **A real circuit call** | **not yet** — needs a deployed contract, a funded wallet, Lace and a running proof server |
+| Deploy from the browser | ✓ proved, balanced by Lace and accepted at block 2707858 |
+| **A live `vote` call** | **not yet** — the next owner step |
 
 ---
 
-## The one blocker
+## Remaining owner steps
 
-Everything outstanding at both levels traces back to the deploy:
-
-```
-faucet → funded wallet → deploy → address
-                                    ├── L1 requirement 4
-                                    ├── L2 requirement 4
-                                    ├── unblocks the circuit call (L2 requirement 2)
-                                    ├── unblocks the demo video
-                                    └── unblocks the live demo link
-```
-
-Owner actions, in order:
-
-1. **Switch Lace to Preprod** and copy the **unshielded** address — it starts
-   `mn_addr_preprod1`. The app shows it with a copy button once connected. The faucet
-   rejects shielded and DUST addresses.
-2. **Request tokens** at the Preprod faucet —
-   https://midnight-tmnight-preprod.nethermind.dev/ (1,000 tNIGHT per request).
-3. **Register the NIGHT for DUST generation** — *Generate tDUST* in Lace. Fees are paid
-   in tDUST, and NIGHT that has not been registered generates none. Skipping this looks
-   like a funded wallet that still cannot pay for anything.
-4. ~~Start the proof server~~ — **already running** as the detached container
-   `cepush-proof-server` on `:6300`, with a restart policy, so it survives a reboot.
-   Check it any time with `npm run proof-server:status`.
-5. Run the app (`npm run dev`), connect Lace, and press **Deploy the poll**. The panel
-   only appears while the build has no address, and the connected wallet pays the fee.
-6. Put the address it returns in `.env` as `VITE_CONTRACT_ADDRESS` and in the README
-   table, then rebuild.
-7. Import the repository in Vercel with `VITE_NETWORK_ID=preprod` and
-   `VITE_CONTRACT_ADDRESS` set, and put the site URL in the README.
-8. Record the demo video: connect Lace, cast a ballot, show the receipt and the public
+1. **Cast a ballot from the app** — connect Lace, pick an option, *Cast ballot*. The
+   receipt and the public tally panel should both update. This closes L2 requirement 2.
+   Keep Docker running: the proof server lives in it.
+2. **Publish the live demo** — import the repository in Vercel with
+   `VITE_NETWORK_ID=preprod` and
+   `VITE_CONTRACT_ADDRESS=b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86`,
+   then put the URL in the README.
+3. **Record the demo video** — connect Lace, cast a ballot, show the receipt and the
    tally moving. Link it in the README.
 
 ---
@@ -152,3 +128,6 @@ Matches the official support matrix for the 0.31.1 compiler line.
 - **2026-09-22** — Deploying happens from the app through Lace rather than from a script
   with its own seed phrase. It reuses the provider bundle that already exists and keeps
   key material in the wallet, where it belongs.
+- **2026-09-25** — The private state password is drawn from a mixed alphabet and checked
+  against the SDK's own policy. Midnight.js 4.1.1 rejects passwords with fewer than three
+  character classes, and the earlier hex password failed every deploy.
