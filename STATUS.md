@@ -1,7 +1,7 @@
 # STATUS
 
 **Current level: L2 — frontend, Lace on Preprod**
-Last updated: 2026-09-22
+Last updated: 2026-09-25
 
 > **L1 is not closed yet.** Its deploy requirement is still open, and L2 needs the same
 > deploy. Only the highest *unbroken* level is rewarded, so the deploy is the single
@@ -35,7 +35,7 @@ Last updated: 2026-09-22
 | # | Item | State |
 |---|------|-------|
 | 1 | Public GitHub repository with README | ✓ |
-| 2 | Live demo link | ✗ deploy the site once (4) lands |
+| 2 | Live demo link | ◐ `vercel.json` ready — import the repo in Vercel once (4) lands |
 | 3 | Deployed Preprod address, verifiable on-chain | ✗ blocked — owner |
 | 4 | Demo video: wallet connect + successful circuit call | ✗ blocked — owner |
 | 5 | README documenting the privacy claim | ✓ |
@@ -64,6 +64,10 @@ errors and no warnings.
 - **Deploy** — a one-shot panel, shown only when the build has no contract address.
 - **Vote** — `findDeployedContract`, then `callTx.vote()`. The circuit takes no
   arguments: the ballot travels as a witness.
+- **Receipt** — after a ballot is accepted: the transaction id, the circuit arguments
+  (none), and where the ballot went (nowhere).
+- **Public ledger panel** — reads the poll's whole public state from the indexer and
+  re-reads after every ballot. This is the observable half of the privacy claim.
 - **The ballot** — written to private state immediately before proving and deleted
   immediately after, under a password that exists only in memory for that page load.
   Never logged, never rendered back, never sent as an argument.
@@ -111,6 +115,10 @@ Owner actions, in order:
    only appears while the build has no address, and the connected wallet pays the fee.
 6. Put the address it returns in `.env` as `VITE_CONTRACT_ADDRESS` and in the README
    table, then rebuild.
+7. Import the repository in Vercel with `VITE_NETWORK_ID=preprod` and
+   `VITE_CONTRACT_ADDRESS` set, and put the site URL in the README.
+8. Record the demo video: connect Lace, cast a ballot, show the receipt and the public
+   tally moving. Link it in the README.
 
 ---
 
