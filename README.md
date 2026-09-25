@@ -34,6 +34,13 @@ the multi-option mode. Track: **Governance**.
 > The address lands here with the first Preprod deploy. Progress against the level
 > roadmap is tracked in [STATUS.md](STATUS.md).
 
+## Live demo and video
+
+| | Link |
+|---|---|
+| Live demo | `not yet published` |
+| Demo video — wallet connect and a circuit call | `not yet recorded` |
+
 ---
 
 ## What is private and what is public
@@ -114,7 +121,8 @@ src/
 ├── components/
 │   ├── WalletConnect.tsx  wallet panel and every error state
 │   ├── DeployPanel.tsx    one-shot deploy, only while there is no address
-│   └── CircuitCall.tsx    the ballot panel
+│   ├── CircuitCall.tsx    the ballot panel and its receipt
+│   └── PublicLedger.tsx   the poll's public state, read from the indexer
 └── App.tsx
 ```
 
@@ -154,6 +162,21 @@ the button that uses it:
 
 > 🛡 Proved without revealing your input — your choice stays on this device and is never
 > sent to the contract.
+
+### Seeing it for yourself
+
+The claim is not only a sentence on the page. Two things in the app let anyone check it:
+
+1. **The receipt.** After a ballot is accepted, the app shows the transaction id, the
+   arguments the circuit was called with — none, `vote()` takes no parameters — and
+   where the ballot went: nowhere outside the device.
+2. **What the chain can see.** A second panel reads the poll's entire public state
+   straight from the Preprod indexer: one counter per option and the total. It re-reads
+   after every ballot. There is no field that holds a ballot, because the contract has
+   none.
+
+Anyone can look the transaction up in a Preprod explorer and find the same thing: a
+proof, and no ballot.
 
 That claim is exactly as strong as the contract behind it, which means it is subject to
 the limits in *What this level does not do yet* above: the ballot stays out of the proof
@@ -213,6 +236,16 @@ cp .env.example .env        # set VITE_CONTRACT_ADDRESS once deployed
 npm run dev                 # http://localhost:5173
 npm run build               # tsc --noEmit && vite build, zero errors
 ```
+
+### Publishing the live demo
+
+`vercel.json` holds the hosting config. Import the repository in Vercel, set
+`VITE_NETWORK_ID=preprod` and `VITE_CONTRACT_ADDRESS=<the Preprod address>` as
+environment variables, and deploy. The build emits the proving keys and zkir under
+`/managed/cepush`, so the site needs nothing else.
+
+Voting from the live site still needs Lace on Preprod and a proof server the wallet can
+reach — Lace's own setting, `http://localhost:6300` by default.
 
 Windows has no native build of the toolchain — use the Docker route above, or WSL2.
 See **[docs/SETUP-WINDOWS.md](docs/SETUP-WINDOWS.md)**.
