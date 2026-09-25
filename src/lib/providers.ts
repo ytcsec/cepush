@@ -13,6 +13,7 @@ import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { validatePassword } from '@midnight-ntwrk/midnight-js-utils';
 import { Transaction } from '@midnight-ntwrk/midnight-js-protocol/ledger';
 import type { FinalizedTransaction } from '@midnight-ntwrk/midnight-js-protocol/ledger';
 import type {
@@ -42,11 +43,32 @@ export type CepushPrivateState = { readonly ballot: number };
  * password that only exists in memory for this page load — so nothing readable
  * survives a refresh, let alone reaches disk in a durable form.
  */
-const sessionPassword = (() => {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return toHex(bytes);
-})();
+const PASSWORD_ALPHABET =
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&*+-=?@^_~';
+
+/**
+ * The store rejects weak passwords: it wants three character classes and no
+ * runs or sequences, and a plain hex string fails the first rule outright. Draw
+ * from a mixed alphabet and keep drawing until the SDK's own policy accepts the
+ * result, so the check can never fail at proof time.
+ */
+function generateSessionPassword(): string {
+  for (;;) {
+    const bytes = new Uint8Array(40);
+    crypto.getRandomValues(bytes);
+    // The modulo bias over 75 symbols is negligible for a password that only
+    // lives for one page load.
+    const candidate = Array.from(bytes, (b) => PASSWORD_ALPHABET[b % PASSWORD_ALPHABET.length]).join('');
+    try {
+      validatePassword(candidate);
+      return candidate;
+    } catch {
+      // Rejected by the policy; draw again.
+    }
+  }
+}
+
+const sessionPassword = generateSessionPassword();
 
 export type CepushProviders = {
   readonly privateStateProvider: PrivateStateProvider<typeof PRIVATE_STATE_ID, CepushPrivateState>;
