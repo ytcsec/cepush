@@ -8,6 +8,7 @@ import {
   ProofFailedError,
 } from '../lib/contract';
 import type { WalletSession } from '../lib/wallet';
+import { Icon } from './Icon';
 
 type Props = {
   readonly session: WalletSession | null;
@@ -58,70 +59,108 @@ export function CircuitCall({ session, onVoted }: Props) {
   }
 
   return (
-    <section className="panel">
-      <h2>{POLL.title}</h2>
+    <section className="card card--feature" aria-labelledby="ballot-title">
+      <div className="card__head">
+        <div>
+          <p className="card__kicker">
+            <Icon name="lock" size={14} /> Open poll
+          </p>
+          <h2 className="card__title" id="ballot-title">
+            {POLL.title}
+          </h2>
+        </div>
+      </div>
 
       <form onSubmit={onSubmit}>
         <fieldset disabled={session === null || busy}>
           <legend className="sr-only">Your ballot</legend>
-          {POLL.options.map((label, index) => (
-            <label className="option" key={label}>
-              <input
-                type="radio"
-                name="ballot"
-                value={index}
-                checked={ballot === index}
-                onChange={() => setBallot(index)}
-              />
-              <span>{label}</span>
-            </label>
-          ))}
+          <div className="options">
+            {POLL.options.map((label, index) => (
+              <label className="option" key={label}>
+                <input
+                  type="radio"
+                  name="ballot"
+                  value={index}
+                  checked={ballot === index}
+                  onChange={() => setBallot(index)}
+                />
+                <span className="option__mark" aria-hidden="true" />
+                <span className="option__label">{label}</span>
+                <span className="option__index" aria-hidden="true">
+                  0{index + 1}
+                </span>
+              </label>
+            ))}
+          </div>
         </fieldset>
 
         <p className="proof-claim">
-          <span aria-hidden="true">🛡</span> Proved without revealing your input — your choice
-          stays on this device and is never sent to the contract.
+          <Icon name="shield" size={20} />
+          <span>
+            <strong>Proved without revealing your input</strong>
+            <span>Your choice stays on this device and is never sent to the contract.</span>
+          </span>
         </p>
 
-        <button className="button" type="submit" disabled={!canVote}>
-          {busy ? 'Generating proof…' : 'Cast ballot'}
+        <button className="button button--block" type="submit" disabled={!canVote} aria-busy={busy}>
+          {busy ? (
+            <>
+              <span className="spinner" aria-hidden="true" /> Generating proof…
+            </>
+          ) : (
+            <>
+              <Icon name="send" size={18} /> Cast ballot
+            </>
+          )}
         </button>
       </form>
 
-      {session === null && <p className="muted">Connect a wallet to vote.</p>}
+      {session === null && <p className="faint hint">Connect a wallet to vote.</p>}
 
       {!isDeployed() && session !== null && phase.kind === 'idle' && (
-        <p className="notice notice--not-deployed">
-          This build has no contract address yet, so the ballot cannot be submitted.
-        </p>
+        <div className="notice notice--not-deployed">
+          <Icon name="alert" />
+          <div className="notice__body">
+            This build has no contract address yet, so the ballot cannot be submitted.
+          </div>
+        </div>
       )}
 
       {busy && (
-        <p className="notice notice--busy" role="status">
-          Proving locally. This takes a few seconds and does not send your choice anywhere.
-        </p>
+        <div className="notice notice--busy" role="status">
+          <span className="spinner" aria-hidden="true" />
+          <div className="notice__body">
+            Proving locally. This takes a few seconds and does not send your choice anywhere.
+          </div>
+        </div>
       )}
 
       {phase.kind === 'submitted' && (
         <div className="notice notice--ok" role="status">
-          <strong>Ballot counted.</strong>
-          <dl className="receipt">
-            <dt>Transaction</dt>
-            <dd>
-              <code>{phase.txId}</code>
-            </dd>
-            <dt>Circuit arguments</dt>
-            <dd>none — <code>vote()</code> takes no parameters</dd>
-            <dt>Your ballot</dt>
-            <dd>not in the transaction; proved valid, never sent</dd>
-          </dl>
+          <Icon name="check" />
+          <div className="notice__body">
+            <strong>Ballot counted.</strong>
+            <dl className="receipt">
+              <dt>Transaction</dt>
+              <dd>
+                <code>{phase.txId}</code>
+              </dd>
+              <dt>Circuit arguments</dt>
+              <dd>
+                none — <code>vote()</code> takes no parameters
+              </dd>
+              <dt>Your ballot</dt>
+              <dd>not in the transaction; proved valid, never sent</dd>
+            </dl>
+          </div>
         </div>
       )}
 
       {phase.kind === 'error' && (
-        <p className={`notice notice--${phase.variant}`} role="alert">
-          {phase.message}
-        </p>
+        <div className={`notice notice--${phase.variant}`} role="alert">
+          <Icon name="alert" />
+          <div className="notice__body">{phase.message}</div>
+        </div>
       )}
     </section>
   );
