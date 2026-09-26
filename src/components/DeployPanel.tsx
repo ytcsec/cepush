@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { deployPoll, describe, isDeployed, POLL } from '../lib/contract';
 import type { WalletSession } from '../lib/wallet';
+import { Icon } from './Icon';
 
 type Props = {
   readonly session: WalletSession | null;
@@ -39,9 +40,14 @@ export function DeployPanel({ session }: Props) {
   }
 
   return (
-    <section className="panel panel--warn">
-      <h2>No poll on chain yet</h2>
-      <p className="muted">
+    <section className="card card--warn" aria-labelledby="deploy-title">
+      <p className="card__kicker">
+        <Icon name="cpu" size={14} /> Setup
+      </p>
+      <h2 className="card__title card__title--sm" id="deploy-title">
+        No poll on chain yet
+      </h2>
+      <p className="muted card__text">
         This build has no contract address. Deploying publishes “{POLL.title}” with{' '}
         {POLL.options.length} options and returns the address to put in <code>.env</code>.
         The connected wallet pays the fee.
@@ -52,30 +58,41 @@ export function DeployPanel({ session }: Props) {
         onClick={onDeploy}
         disabled={session === null || phase.kind === 'deploying'}
       >
-        {phase.kind === 'deploying' ? 'Deploying…' : 'Deploy the poll'}
+        {phase.kind === 'deploying' ? (
+          <>
+            <span className="spinner" aria-hidden="true" /> Deploying…
+          </>
+        ) : (
+          'Deploy the poll'
+        )}
       </button>
 
-      {session === null && <p className="muted">Connect a funded wallet first.</p>}
+      {session === null && <p className="faint hint">Connect a funded wallet first.</p>}
 
       {phase.kind === 'deploying' && (
-        <p className="notice notice--busy" role="status">
-          Waiting for the network. Keep the proof server running.
-        </p>
+        <div className="notice notice--busy" role="status">
+          <span className="spinner" aria-hidden="true" />
+          <div className="notice__body">Waiting for the network. Keep the proof server running.</div>
+        </div>
       )}
 
       {phase.kind === 'done' && (
-        <p className="notice notice--ok" role="status">
-          Deployed. Put this in <code>.env</code> as <code>VITE_CONTRACT_ADDRESS</code> and
-          rebuild:
-          <br />
-          <code>{phase.address}</code>
-        </p>
+        <div className="notice notice--ok" role="status">
+          <Icon name="check" />
+          <div className="notice__body">
+            Deployed. Put this in <code>.env</code> as <code>VITE_CONTRACT_ADDRESS</code> and
+            rebuild:
+            <br />
+            <code>{phase.address}</code>
+          </div>
+        </div>
       )}
 
       {phase.kind === 'error' && (
-        <p className="notice notice--proof" role="alert">
-          {phase.message}
-        </p>
+        <div className="notice notice--proof" role="alert">
+          <Icon name="alert" />
+          <div className="notice__body">{phase.message}</div>
+        </div>
       )}
     </section>
   );
