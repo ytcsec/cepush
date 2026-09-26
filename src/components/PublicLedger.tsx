@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { describe, isDeployed, POLL, readTally, type PublicTally } from '../lib/contract';
 import type { WalletSession } from '../lib/wallet';
+import { Icon } from './Icon';
 
 type Props = {
   readonly session: WalletSession | null;
@@ -41,50 +42,84 @@ export function PublicLedger({ session, refreshKey }: Props) {
 
   if (!isDeployed()) return null;
 
+  const total = tally?.totalVotes ?? 0n;
+  const share = (count: bigint): number => (total === 0n ? 0 : Number((count * 1000n) / total) / 10);
+
   return (
-    <section className="panel">
-      <h2>What the chain can see</h2>
-      <p className="muted">
+    <section className="card" aria-labelledby="ledger-title">
+      <div className="card__head">
+        <div>
+          <p className="card__kicker">
+            <Icon name="eye" size={14} /> Public ledger
+          </p>
+          <h2 className="card__title card__title--sm" id="ledger-title">
+            What the chain can see
+          </h2>
+        </div>
+        {session !== null && (
+          <button
+            className="icon-button"
+            onClick={() => void refresh()}
+            disabled={loading}
+            aria-label={loading ? 'Reading the chain' : 'Refresh the public tally'}
+            title="Refresh"
+          >
+            <Icon name="refresh" size={15} className={loading ? 'spinning' : undefined} />
+          </button>
+        )}
+      </div>
+
+      <p className="faint">
         Read live from the Preprod indexer. This is the entire public state of the poll.
       </p>
 
       {session === null && <p className="muted">Connect a wallet to read the public tally.</p>}
 
       {session !== null && tally === null && !loading && !error && (
-        <p className="notice notice--not-found">No contract state at this address yet.</p>
+        <div className="notice notice--not-found">
+          <Icon name="alert" />
+          <div className="notice__body">No contract state at this address yet.</div>
+        </div>
       )}
 
       {tally !== null && (
-        <table className="ledger">
-          <tbody>
+        <>
+          <ul className="tally" aria-label="Votes per option">
             {tally.counts.map((count, index) => (
-              <tr key={index}>
-                <th scope="row">{POLL.options[index] ?? `Option ${index}`}</th>
-                <td>{count.toString()}</td>
-              </tr>
+              <li className="tally__row" key={index}>
+                <div className="tally__top">
+                  <span className="tally__label">{POLL.options[index] ?? `Option ${index}`}</span>
+                  <span className="tally__value">
+                    {count.toString()} <span>· {share(count)}%</span>
+                  </span>
+                </div>
+                <div className="tally__bar" aria-hidden="true">
+                  <div className="tally__fill" style={{ transform: `scaleX(${share(count) / 100})` }} />
+                </div>
+              </li>
             ))}
-            <tr className="ledger__total">
-              <th scope="row">Total ballots</th>
-              <td>{tally.totalVotes.toString()}</td>
-            </tr>
-            <tr className="ledger__hidden">
-              <th scope="row">Who chose what</th>
-              <td>not stored</td>
-            </tr>
-          </tbody>
-        </table>
+          </ul>
+
+          <dl className="ledger-facts">
+            <div>
+              <dt>Total ballots</dt>
+              <dd>{tally.totalVotes.toString()}</dd>
+            </div>
+            <div className="is-hidden">
+              <dt>Who chose what</dt>
+              <dd>
+                <Icon name="lock" size={15} /> not stored
+              </dd>
+            </div>
+          </dl>
+        </>
       )}
 
       {error !== null && (
-        <p className="notice notice--unknown" role="alert">
-          {error}
-        </p>
-      )}
-
-      {session !== null && (
-        <button className="button button--ghost" onClick={() => void refresh()} disabled={loading}>
-          {loading ? 'Reading the chain…' : 'Refresh'}
-        </button>
+        <div className="notice notice--unknown" role="alert">
+          <Icon name="alert" />
+          <div className="notice__body">{error}</div>
+        </div>
       )}
     </section>
   );
