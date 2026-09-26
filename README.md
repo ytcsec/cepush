@@ -122,6 +122,11 @@ witness, so the transaction carries a proof and nothing else.
 
 A React + Vite frontend talks to Lace through the DApp Connector API (v4.0.1).
 
+The interface is dark, warm ink with a brass accent: Playfair Display for statements,
+Inter for reading, JetBrains Mono for hashes and addresses. Icons are one inline SVG set,
+focus rings are always visible, and motion is switched off for anyone who asks their
+system for reduced motion. It is laid out for a phone first and widens to two columns.
+
 ```
 src/
 ├── lib/wallet.ts          discovery, connect, typed errors
@@ -132,7 +137,8 @@ src/
 │   ├── WalletConnect.tsx  wallet panel and every error state
 │   ├── DeployPanel.tsx    one-shot deploy, only while there is no address
 │   ├── CircuitCall.tsx    the ballot panel and its receipt
-│   └── PublicLedger.tsx   the poll's public state, read from the indexer
+│   ├── PublicLedger.tsx   the poll's public state, charted from the indexer
+│   └── Icon.tsx           the svg icon set and the brand mark
 └── App.tsx
 ```
 
@@ -170,7 +176,7 @@ password that exists only in memory for that page load. It is never written to a
 never rendered back, and never sent as a circuit argument. The panel says so, next to
 the button that uses it:
 
-> 🛡 Proved without revealing your input — your choice stays on this device and is never
+> **Proved without revealing your input.** Your choice stays on this device and is never
 > sent to the contract.
 
 ### Seeing it for yourself
