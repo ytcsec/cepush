@@ -38,10 +38,10 @@ describe('cepush — state transition', () => {
     const poll = new CepushSimulator(TITLE, OPTIONS, 0);
 
     poll.vote();                  // 0
-    poll.withBallot(2).vote();    // 2
-    poll.withBallot(0).vote();    // 0
-    poll.withBallot(1).vote();    // 1
-    poll.withBallot(0).vote();    // 0
+    poll.asNewVoter(2).vote();    // 2
+    poll.asNewVoter(0).vote();    // 0
+    poll.asNewVoter(1).vote();    // 1
+    poll.asNewVoter(0).vote();    // 0
 
     expect(poll.tallies(OPTIONS)).toEqual([3, 1, 1]);
     expect(Number(poll.getLedger().totalVotes)).toBe(5);
@@ -52,7 +52,7 @@ describe('cepush — state transition', () => {
     const optionCountBefore = Number(poll.getLedger().optionCount);
 
     poll.vote();
-    poll.withBallot(2).vote();
+    poll.asNewVoter(2).vote();
 
     expect(Number(poll.getLedger().optionCount)).toBe(optionCountBefore);
     expect(Number(poll.getLedger().optionCount)).toBe(OPTIONS);
@@ -62,8 +62,8 @@ describe('cepush — state transition', () => {
     const poll = new CepushSimulator(TITLE, OPTIONS, 2);
 
     poll.vote();
-    poll.withBallot(1).vote();
-    poll.withBallot(1).vote();
+    poll.asNewVoter(1).vote();
+    poll.asNewVoter(1).vote();
 
     const sum = poll.tallies(OPTIONS).reduce((a, b) => a + b, 0);
     expect(sum).toBe(Number(poll.getLedger().totalVotes));
@@ -116,13 +116,13 @@ describe('cepush — privacy', () => {
     // carries no history.
     const forwards = new CepushSimulator(TITLE, OPTIONS, 0);
     forwards.vote();
-    forwards.withBallot(1).vote();
-    forwards.withBallot(2).vote();
+    forwards.asNewVoter(1).vote();
+    forwards.asNewVoter(2).vote();
 
     const backwards = new CepushSimulator(TITLE, OPTIONS, 2);
     backwards.vote();
-    backwards.withBallot(1).vote();
-    backwards.withBallot(0).vote();
+    backwards.asNewVoter(1).vote();
+    backwards.asNewVoter(0).vote();
 
     expect(forwards.tallies(OPTIONS)).toEqual(backwards.tallies(OPTIONS));
     expect(Number(forwards.getLedger().totalVotes)).toBe(

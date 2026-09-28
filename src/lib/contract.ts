@@ -4,7 +4,7 @@
  * The ballot never appears in this module's inputs as a circuit argument. It is
  * handed to the witness at proof time and dropped immediately afterwards.
  */
-import type { WitnessContext } from '@midnight-ntwrk/compact-runtime';
+import { fromHex, type WitnessContext } from '@midnight-ntwrk/compact-runtime';
 import * as CompiledContract from '@midnight-ntwrk/compact-js/effect/CompiledContract';
 import { deployContract, findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
 
@@ -15,6 +15,7 @@ import {
   resetPrivateStore,
   type CepushPrivateState,
 } from './providers';
+import { voterKeyFor } from './voterKey';
 import type { WalletSession } from './wallet';
 
 /** Filled in after the Preprod deploy. Empty means "not wired up yet". */
@@ -102,8 +103,9 @@ export class ContractNotDeployedError extends Error {
  * and is never logged, stored, or returned.
  */
 /**
- * The witness the contract asks for. It reads the ballot out of private state
- * and hands it to the prover. Nothing here writes, logs or returns it.
+ * The witnesses the contract asks for. They read the ballot and the voter key
+ * out of private state and hand them to the prover. Nothing here writes, logs
+ * or returns either value.
  */
 const witnesses = {
   secretBallot: ({
@@ -111,6 +113,12 @@ const witnesses = {
   }: WitnessContext<Ledger, CepushPrivateState>): [CepushPrivateState, bigint] => [
     privateState,
     BigInt(privateState.ballot),
+  ],
+  voterSecret: ({
+    privateState,
+  }: WitnessContext<Ledger, CepushPrivateState>): [CepushPrivateState, Uint8Array] => [
+    privateState,
+    fromHex(privateState.voterSecret),
   ],
 };
 
@@ -138,7 +146,7 @@ export async function castVote(session: WalletSession, option: number): Promise<
       compiledContract,
       contractAddress: CONTRACT_ADDRESS,
       privateStateId: PRIVATE_STATE_ID,
-      initialPrivateState: { ballot: option },
+      initialPrivateState: { ballot: option, voterSecret: await voterKeyFor(session.coinPublicKey) },
     });
 
     // `vote` takes no arguments: the ballot travels as a witness, so the call
@@ -167,7 +175,8 @@ export async function deployPoll(session: WalletSession): Promise<string> {
   const deployed = await deployContract(providers, {
     compiledContract,
     privateStateId: PRIVATE_STATE_ID,
-    initialPrivateState: { ballot: 0 },
+    // Deploying casts no ballot, so no real voter key is needed here.
+    initialPrivateState: { ballot: 0, voterSecret: '00'.repeat(32) },
     args: [POLL.title, BigInt(POLL.options.length)],
   });
 

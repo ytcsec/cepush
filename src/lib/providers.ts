@@ -34,8 +34,8 @@ export type CepushCircuitId = 'vote';
 /** Key under which the ballot is handed to the witness. */
 export const PRIVATE_STATE_ID = 'cepush-ballot';
 
-/** The ballot, as the witness expects to find it. */
-export type CepushPrivateState = { readonly ballot: number };
+/** What the witnesses read: the ballot, and the voter key as 64 hex characters. */
+export type CepushPrivateState = { readonly ballot: number; readonly voterSecret: string };
 
 /**
  * The private state store is deliberately throwaway. The ballot is written just

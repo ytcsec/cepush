@@ -2,6 +2,7 @@ import type * as __compactRuntime from '@midnight-ntwrk/compact-runtime';
 
 export type Witnesses<PS> = {
   secretBallot(context: __compactRuntime.WitnessContext<Ledger, PS>): [PS, bigint];
+  voterSecret(context: __compactRuntime.WitnessContext<Ledger, PS>): [PS, Uint8Array];
 }
 
 export type ImpureCircuits<PS> = {
@@ -13,9 +14,13 @@ export type ProvableCircuits<PS> = {
 }
 
 export type PureCircuits = {
+  nullifierOf(pollId_0: Uint8Array, secret_0: Uint8Array): Uint8Array;
 }
 
 export type Circuits<PS> = {
+  nullifierOf(context: __compactRuntime.CircuitContext<PS>,
+              pollId_0: Uint8Array,
+              secret_0: Uint8Array): __compactRuntime.CircuitResults<PS, Uint8Array>;
   vote(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
 }
 
@@ -29,6 +34,12 @@ export type Ledger = {
     lookup(key_0: bigint): { read(): bigint }
   };
   readonly totalVotes: bigint;
+  nullifiers: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(elem_0: Uint8Array): boolean;
+    [Symbol.iterator](): Iterator<Uint8Array>
+  };
 }
 
 export type ContractReferenceLocations = any;

@@ -5,33 +5,48 @@ import CompactStandardLibrary;
 // =============================================================================
 // cepush — private, verifiable voting for communities
 //
-// Level 1 scope: one poll, a private ballot witness, public per-option tallies.
+// Level 3 scope: one poll, a private ballot, public per-option tallies, and a
+// nullifier that lets each voter key count exactly once.
 //
 // PUBLIC (written to the ledger, readable by anyone):
 //   - title        the poll question
 //   - optionCount  how many options the poll offers
 //   - tallies      one counter per option
 //   - totalVotes   how many ballots have been counted in total
+//   - nullifiers   one opaque 32-byte hash per ballot counted
 //
 // PRIVATE (never written, never returned, never logged):
-//   - the ballot itself, supplied by the `secretBallot` witness. It is a local
-//     input to the proof. It is not a circuit parameter, so it never appears in
-//     the transaction's call arguments.
+//   - the ballot itself, supplied by the `secretBallot` witness,
+//   - the voter key, supplied by the `voterSecret` witness.
+//   Neither is a circuit parameter, so neither appears in the transaction's
+//   call arguments. Both are local inputs to the proof and nothing more.
 //
 // PROVED (what a verifier learns from the proof alone):
 //   - the prover knew a ballot value strictly below `optionCount`,
+//   - the prover knew a voter key whose nullifier for this poll is the one
+//     being published, and that nullifier had not been published before,
 //   - exactly one option counter was incremented, by exactly one,
 //   - `totalVotes` grew by exactly one.
 //
-// NOT ENFORCED AT L1, deliberately:
-//   - eligibility. Any caller can run `vote`, as often as they like. The
-//     one-vote-per-member nullifier is L3, the allowlist proof is L4.
-//   - unlinkability. The tallies are plaintext ledger counters, so the *state
-//     delta* of a single vote transaction shows which counter moved, and the
-//     submitting wallet is visible on chain. The ballot is hidden from the
-//     proof and from the call arguments, but not from an observer diffing the
-//     ledger around one transaction. Hiding the per-transaction delta itself
-//     needs commit-then-reveal tallies and is out of L1 scope.
+// WHY THE NULLIFIER IS SAFE TO PUBLISH:
+//   nullifier = persistentHash("cepush:nullifier:v1", pollId, voterKey)
+//   The voter key is 32 random bytes that never leave the voter's device, so
+//   the hash cannot be inverted or recomputed by anyone else. `pollId` is this
+//   contract's own address, so the same key yields unrelated nullifiers in two
+//   different polls and a voter cannot be followed from one poll to the next.
+//
+// NOT ENFORCED AT L3, deliberately:
+//   - eligibility. The nullifier stops one voter key from voting twice. It does
+//     not stop someone from minting a second key. Binding keys to members is the
+//     allowlist Merkle proof, which is L4 scope: the allowlist will hold a
+//     commitment to each member's voter key, and `vote` will prove membership
+//     of the key it derives the nullifier from.
+//   - unlinkability of the tally delta. The tallies are plaintext ledger
+//     counters, so the state delta of one vote transaction shows which counter
+//     moved, and the submitting wallet is visible on chain. The ballot is hidden
+//     from the proof and from the call arguments, but not from an observer
+//     diffing the ledger around one transaction. Hiding the delta needs
+//     commit-then-reveal tallies and is out of scope.
 //
 // This contract moves no funds and holds no balance, by design.
 // =============================================================================
@@ -51,10 +66,19 @@ export ledger tallies: Map<Uint<8>, Counter>;
 /// counters sum to the number of votes cast, with no gaps or double counts.
 export ledger totalVotes: Counter;
 
+/// Every nullifier spent in this poll. Public: anyone can check that no
+/// nullifier was counted twice and that the set is as large as `totalVotes`.
+/// Each entry is a one-way hash of a secret key, unlinkable to any wallet.
+export ledger nullifiers: Set<Bytes<32>>;
+
 /// The voter's choice, held by the local wallet and fed into proof generation.
 /// Declared as a witness rather than a circuit parameter precisely so that it
 /// stays out of the transaction. The TypeScript driver supplies it.
 witness secretBallot(): Uint<8>;
+
+/// The voter's key: 32 random bytes kept on the voter's device. Only its
+/// nullifier ever reaches the ledger.
+witness voterSecret(): Bytes<32>;
 
 /// Creates the poll. Both arguments are public poll metadata, so both are
 /// deliberately disclosed — a poll nobody can read is not a poll.
@@ -74,16 +98,32 @@ constructor(pollTitle: Opaque<"string">, options: Uint<8>) {
   }
 }
 
+/// The nullifier a voter key spends in a given poll.
+///
+/// Pure and exported so the app can compute the same value off-chain and tell
+/// a voter they have already voted before it asks the wallet for anything.
+/// The domain tag keeps these hashes from colliding with any other use of the
+/// same key.
+export pure circuit nullifierOf(pollId: Bytes<32>, secret: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "cepush:nullifier:v1"), pollId, secret]);
+}
+
 /// Casts one ballot.
 ///
-/// Takes no parameters on purpose: the choice comes from the witness, so the
-/// transaction carries a proof and nothing else.
+/// Takes no parameters on purpose: the choice and the voter key both come from
+/// witnesses, so the transaction carries a proof, a nullifier, and nothing else.
 export circuit vote(): [] {
   const choice = secretBallot();
 
   // The range check is the whole point of the proof. It runs against the
   // private value, inside the circuit, before anything is disclosed.
   assert(choice < optionCount, "ballot is outside the poll's option range");
+
+  // disclose: the nullifier is a one-way hash of a key only the voter holds,
+  // scoped to this poll. Publishing it reveals nothing about who voted or how.
+  const spent = disclose(nullifierOf(kernel.self().bytes, voterSecret()));
+  assert(!nullifiers.member(spent), "this voter key has already voted in this poll");
+  nullifiers.insert(spent);
 
   // disclose: this is the sanctioned disclosure — the increment of a public
   // tally. Nothing else about the voter or the ballot crosses this line.

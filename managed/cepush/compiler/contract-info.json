@@ -4,6 +4,31 @@
   "runtime-version": "0.16.0",
   "circuits": [
     {
+      "name": "nullifierOf",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+        {
+          "name": "pollId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "secret",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
       "name": "vote",
       "pure": false,
       "proof": true,
@@ -24,6 +49,15 @@
       "result type": {
         "type-name": "Uint",
         "maxval": 255
+      }
+    },
+    {
+      "name": "voterSecret",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Bytes",
+        "length": 32
       }
     }
   ],
@@ -68,6 +102,16 @@
       "index": 3,
       "exported": true,
       "storage": "Counter"
+    },
+    {
+      "name": "nullifiers",
+      "index": 4,
+      "exported": true,
+      "storage": "Set",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
     }
   ]
 }
