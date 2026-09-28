@@ -139,7 +139,7 @@ a screen.
 |---|---|---|---|
 | L1 | Toolchain, first deploy, tests, README | Single poll, private ballot witness, public tally | ✓ done |
 | L2 | React app, Lace connect, circuit call from the browser, live demo, video | Same contract, wired to the UI | ✓ done |
-| L3 | CI/CD, polished UI, this proposal | Nullifier: one vote per voter key | ✓ built, awaiting Preprod redeploy |
+| L3 | CI/CD, polished UI, this proposal | Nullifier: one vote per voter key | ✓ done, live on Preprod |
 | L4 | MVP on Preprod, usage guide | Allowlist Merkle proof, multiple polls, poll creation | planned |
 | L5 | 50 Preprod users, feedback, iteration | Feedback-driven changes | planned |
 | L6 | Redeploy, 20 onboarded users, launch | Hardening, optimisation | planned |
