@@ -3,9 +3,9 @@
 **Current level: L3 — nullifier, CI/CD, proposal**
 Last updated: 2026-09-28
 
-> L1 and L2 are closed. The live Preprod address is still the L2 contract,
-> `b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86` (block 2707858).
-> The L3 contract is built and tested and waits for the owner's redeploy.
+> L1 and L2 are closed. **The L3 contract is deployed to Preprod** at
+> `ac616d0ed7625c97c6188df5253077ce140ac64d73390ae925631caf4e3533ba` (block 2748944, 2026-09-28), and the live demo points at it.
+> The L2 contract at `b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86` is retired.
 
 ---
 
@@ -18,7 +18,7 @@ Last updated: 2026-09-28
 | 3 | Polished UI | ✓ already-voted state, nullifier in the receipt and the ledger panel, one-vote pillar, checked at 1280 / 900 / 390 px |
 | 4 | `PROPOSAL.md` | ✓ |
 | 5 | Idea submitted for approval | ✗ owner — submit `PROPOSAL.md` on the program platform |
-| 6 | Contract: nullifier, one vote per voter key | ✓ compiled, tested · ✗ Preprod redeploy — owner |
+| 6 | Contract: nullifier, one vote per voter key | ✓ compiled, tested, deployed at block 2748944; on-chain state decodes with an empty `nullifiers` set |
 | 7 | Minimum 10 meaningful commits | ✓ |
 
 ### What changed in the contract
@@ -39,7 +39,9 @@ Last updated: 2026-09-28
 | Compile is reproducible | a clean Linux checkout recompiles byte-identical `managed/`; CI enforces it |
 | CI | green on GitHub Actions |
 | App build | `tsc --noEmit` and `vite build` clean |
-| Live vote against the new contract | ✗ waits for the redeploy |
+| Deployed state matches the compiled contract | ✓ indexer state decodes with the L3 `ledger()`: 3 options, 0 votes, 0 nullifiers, entry point `vote` |
+| Live site on the new address | ✓ cepush.vercel.app bundle carries the new address and the nullifier code |
+| Live vote against the new contract | ✗ waits for the owner's first ballot |
 
 ---
 
@@ -125,14 +127,9 @@ errors and no warnings.
 
 ## Remaining owner steps
 
-1. **Redeploy the L3 contract to Preprod.** Start the app with no contract address so
-   the deploy panel appears:
-   `VITE_CONTRACT_ADDRESS= npm run dev -- --port 5174`, open http://localhost:5174,
-   connect Lace on Preprod with the proof server running, press **Deploy**, and send
-   back the new address. The Vercel environment, README and this file then move to it.
-2. **Cast one ballot on the new contract**, then try a second one from the same wallet:
+1. **Cast one ballot on the new contract**, then try a second one from the same wallet:
    the panel should lock with "This wallet has already voted in this poll".
-3. **Submit the idea for approval** with `PROPOSAL.md` on the program platform.
+2. **Submit the idea for approval** with `PROPOSAL.md` on the program platform.
 
 ---
 
