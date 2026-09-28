@@ -34,22 +34,22 @@ The full proposal (problem, users, design, roadmap and known limits) is in
 
 | Network | Address | Deployed |
 |---------|---------|----------|
-| Preprod | `b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86` | 2026-09-25, block 2707858 |
+| Preprod | `ac616d0ed7625c97c6188df5253077ce140ac64d73390ae925631caf4e3533ba` | 2026-09-28, block 2748944 |
 
-Deploy transaction: `7d7b663fc1840747da6e0454edb47b8b178e8a3e9221a50a70f7511c69ee86f6`
+Deploy transaction: `a520da081cf7683a29314635b622a9177b1521ed991cfc35abfcc11b4fa2049f`
 
-> This address runs the L2 contract, which has no nullifier. The L3 contract below is
-> compiled and tested, and replaces this address once it is redeployed to Preprod.
-
-Anyone can check the address against the public Preprod indexer:
+This is the L3 contract, with the nullifier. The live demo points at it. Anyone can
+check the address against the public Preprod indexer:
 
 ```bash
-curl -s -X POST https://indexer.preprod.midnight.network/api/v3/graphql   -H 'content-type: application/json'   -d '{"query":"{ contractAction(address: \"b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86\") { __typename transaction { hash block { height } } } }"}'
+curl -s -X POST https://indexer.preprod.midnight.network/api/v3/graphql   -H 'content-type: application/json'   -d '{"query":"{ contractAction(address: \"ac616d0ed7625c97c6188df5253077ce140ac64d73390ae925631caf4e3533ba\") { __typename transaction { hash block { height } } } }"}'
 ```
 
-The first ballot was cast from the app through Lace on 2026-09-25: a `vote` call at
-block 2708080, transaction `4a465bbc1e36afaf6b17bacda808a29486f27b2184c709340905da52d6e3695c`.
-The same query now answers with that `ContractCall` — entry point `vote`, no arguments.
+Earlier deployments, kept for the record:
+
+| Level | Address | Deployed | Notes |
+|---|---|---|---|
+| L1–L2 | `b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86` | 2026-09-25, block 2707858 | no nullifier; first browser `vote` at block 2708080, tx `4a465bbc1e36afaf6b17bacda808a29486f27b2184c709340905da52d6e3695c` |
 Progress against the level roadmap is tracked in [STATUS.md](STATUS.md).
 
 ## Live demo and video
