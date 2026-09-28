@@ -1,27 +1,16 @@
 # Screenshots
 
-Two images belong here for the L1 submission.
+## `tests.png` — the test run
 
-## `compile.png` — the build
+`npx vitest run --reporter=verbose` on the L3 contract: 17 tests across circuit logic,
+state transition, privacy, the nullifier, and nullifier privacy, all passing. Linked
+from the main README's Tests section.
 
-Run the verify script and capture the terminal. It prints the compiler version, the
-language version, the compile itself, the artefacts it produced, and the test run:
-
-```bash
-docker run --rm -v "$PWD:/work" cepush-toolchain bash docker/verify.sh
-```
-
-Build the image first if you have not already:
+To reproduce it:
 
 ```bash
-docker build -f docker/toolchain.Dockerfile -t cepush-toolchain .
+npm run compact
+npx vitest run --reporter=verbose
 ```
 
-## `deploy.png` — the deployed contract
-
-Capture the terminal showing the deploy finishing with the contract address visible.
-The proof server has to be running first (`npm run proof-server`) and the wallet has to
-be funded at the Preprod faucet.
-
-Once both images exist, link them from the main README next to the contract address
-table.
+The same suite runs on every push in CI; see the badge at the top of the main README.
