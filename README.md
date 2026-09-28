@@ -65,7 +65,40 @@ Progress against the level roadmap is tracked in [STATUS.md](STATUS.md).
 
 ---
 
-## What is private and what is public
+## Privacy model
+
+### What an observer can and cannot learn
+
+Anyone can read the chain: the Preprod indexer, a block explorer, or the "What the chain
+can see" panel in the app. This is what that observer gets.
+
+**An observer can learn:**
+
+- the poll question and how many options it has,
+- the running count for every option, and the total number of ballots,
+- the set of spent nullifiers, and so how many voter keys have voted,
+- that a given transaction was a valid `vote`: the proof shows the ballot was a legal
+  option and the nullifier was new,
+- which wallet paid for and submitted each vote transaction,
+- by comparing the tallies just before and just after one transaction, which counter
+  that transaction moved.
+
+**An observer cannot learn:**
+
+- your ballot from the transaction itself. It is a private witness, never a call
+  argument, and the circuit returns nothing,
+- your voter key. Only its one-way hash, the nullifier, is published,
+- which wallet a nullifier belongs to. Nothing on chain links the two,
+- whether the same person voted in two different polls. The poll address is part of
+  the hash, so the same key gives unrelated nullifiers,
+- the order ballots were cast in, from the tally. It is an aggregate with no history.
+
+The two items on the "can learn" list that involve a single transaction (who submitted
+it, and which counter it moved) are limits of this level, explained under *What this
+level does not do yet* below. The ballot is kept out of the proof and the arguments,
+but the counters themselves are still public.
+
+### Where each value lives
 
 | Data point | Where it lives | Who sees it |
 |---|---|---|
@@ -342,6 +375,8 @@ still cannot pay for a transaction.
 
 Seventeen tests, all passing, driving the compiled circuits in-process — no node and no
 proof server, so the suite finishes in seconds.
+
+![npm test: 17 tests passing](docs/screenshots/tests.png)
 
 | Suite | Tests | Covers |
 |---|---|---|
