@@ -41,7 +41,7 @@ Last updated: 2026-09-28
 | App build | `tsc --noEmit` and `vite build` clean |
 | Deployed state matches the compiled contract | ✓ indexer state decodes with the L3 `ledger()`: 3 options, 0 votes, 0 nullifiers, entry point `vote` |
 | Live site on the new address | ✓ cepush.vercel.app bundle carries the new address and the nullifier code |
-| Live vote against the new contract | ✗ waits for the owner's first ballot |
+| Live vote against the new contract | ✓ block 2749236, tx `1a1b0e98…cf7f`; tally `[1, 0, 0]`, 1 ballot, 1 nullifier spent |
 
 ---
 
@@ -127,9 +127,10 @@ errors and no warnings.
 
 ## Remaining owner steps
 
-1. **Cast one ballot on the new contract**, then try a second one from the same wallet:
-   the panel should lock with "This wallet has already voted in this poll".
-2. **Submit the idea for approval** with `PROPOSAL.md` on the program platform.
+1. **Submit the idea for approval** with `PROPOSAL.md` on the program platform.
+
+The first ballot on the L3 contract was cast from the live site through Lace and
+checked by the owner.
 
 ---
 

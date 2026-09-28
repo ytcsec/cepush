@@ -45,6 +45,10 @@ check the address against the public Preprod indexer:
 curl -s -X POST https://indexer.preprod.midnight.network/api/v3/graphql   -H 'content-type: application/json'   -d '{"query":"{ contractAction(address: \"ac616d0ed7625c97c6188df5253077ce140ac64d73390ae925631caf4e3533ba\") { __typename transaction { hash block { height } } } }"}'
 ```
 
+The first ballot on this contract was cast from the live site through Lace on
+2026-09-28: a `vote` call at block 2749236, transaction
+`1a1b0e98f4d4b876e469b459b22fe598f914b50069778e423c533bf5f292cf7f`. The public state now reads one ballot and exactly one spent nullifier.
+
 Earlier deployments, kept for the record:
 
 | Level | Address | Deployed | Notes |
