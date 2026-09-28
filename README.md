@@ -2,6 +2,8 @@
 
 **Private, verifiable voting for communities on Midnight.**
 
+[![ci](https://github.com/ytcsec/cepush/actions/workflows/ci.yml/badge.svg)](https://github.com/ytcsec/cepush/actions/workflows/ci.yml)
+
 A DAO, a club or an online community can run a vote where the ballots stay secret
 forever and the result is something anybody can check for themselves.
 
@@ -23,6 +25,9 @@ This maps to three items on the program's idea list — **Private Voting** as th
 **Private Allowlist Access** for eligibility, and **Anonymous Feedback / Survey** for
 the multi-option mode. Track: **Governance**.
 
+The full proposal (problem, users, design, roadmap and known limits) is in
+[PROPOSAL.md](PROPOSAL.md).
+
 ---
 
 ## Contract address
@@ -32,6 +37,9 @@ the multi-option mode. Track: **Governance**.
 | Preprod | `b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86` | 2026-09-25, block 2707858 |
 
 Deploy transaction: `7d7b663fc1840747da6e0454edb47b8b178e8a3e9221a50a70f7511c69ee86f6`
+
+> This address runs the L2 contract, which has no nullifier. The L3 contract below is
+> compiled and tested, and replaces this address once it is redeployed to Preprod.
 
 Anyone can check the address against the public Preprod indexer:
 
@@ -60,33 +68,54 @@ Progress against the level roadmap is tracked in [STATUS.md](STATUS.md).
 | Poll title and option count | Public ledger | Everyone |
 | Per-option tally counters | Public ledger | Everyone |
 | Total ballots counted | Public ledger | Everyone |
+| Nullifier set (double-vote guard) | Public ledger | Everyone, unlinkable to any wallet |
 | The ballot (which option you picked) | Private witness | Never reaches the contract |
+| Your voter key | Private witness | Never leaves your device |
 
-The contract calls `disclose()` three times, for two purposes:
+The contract calls `disclose()` four times, for three purposes:
 
 1. **Poll metadata** in the constructor — `title` and `optionCount`. A poll nobody can
    read is not a poll.
-2. **The tally increment** in `vote` — the option index, used as the counter key. A
+2. **The nullifier** in `vote` — a one-way hash of your voter key and the poll's
+   address. It lets the contract refuse a second ballot from the same key without
+   learning whose key it is.
+3. **The tally increment** in `vote` — the option index, used as the counter key. A
    tally nobody can read is not verifiable.
 
-Nothing else crosses from private into public. The ballot reaches the circuit as a
-witness, not as a call argument, so it never appears in the transaction's arguments.
+Nothing else crosses from private into public. The ballot and the voter key reach the
+circuit as witnesses, not as call arguments, so neither appears in the transaction.
+
+### One vote each: the nullifier
+
+Every wallet gets a **voter key**: 32 random bytes, minted the first time it votes and
+kept in this browser. When you vote, the circuit computes
+
+```
+nullifier = persistentHash("cepush:nullifier:v1", pollAddress, voterKey)
+```
+
+and publishes it. If that nullifier is already on the ledger, the circuit refuses the
+ballot, so the same key can never count twice. Nobody can work backwards from a
+nullifier to a key, and because the poll's address is part of the hash, the same key
+gives unrelated nullifiers in different polls.
+
+The app computes the same nullifier locally with the contract's exported `nullifierOf`
+circuit, so if this wallet has already voted it says so before asking Lace for anything.
+
+The key cannot come from a wallet signature: Midnight signatures are randomised, so
+signing the same message twice gives two different results. That is why it is minted
+once and stored instead.
 
 ### What this level does not do yet
 
-The contract is deliberately small at L1, so it is worth being precise about what is
-still missing:
-
-- **No eligibility check.** Any caller can run `vote()`, as often as they like. The
-  one-vote-per-member nullifier lands at L3, the allowlist membership proof at L4.
-- **No unlinkability.** The tallies are plaintext counters, so the state delta of a
-  single vote transaction shows which counter moved, and the wallet that submitted it
-  is visible on chain. The ballot is out of the proof and out of the call arguments,
-  but not out of a ledger diff taken around one transaction.
-
-What L1 does establish is the shape the rest builds on: the ballot lives in a witness,
-the range check runs inside the circuit against the private value, and only the
-aggregate is ever published.
+- **Voter keys are not tied to members yet.** The contract guarantees one ballot per
+  key, and the app keeps one key per wallet in each browser. Someone who clears site
+  data or switches browser gets a fresh key. The allowlist at L4 closes this: the poll
+  will hold commitments to enrolled keys, and `vote` will prove its key is one of them.
+- **No unlinkability of the tally delta.** The tallies are plaintext counters, so the
+  state delta of a single vote transaction shows which counter moved, and the wallet
+  that submitted it is visible on chain. The ballot is out of the proof and out of the
+  call arguments, but not out of a ledger diff taken around one transaction.
 
 This product moves no money. There is no fund handling and no token transfer anywhere
 in the contract, by design.
@@ -102,19 +131,31 @@ export ledger title: Opaque<"string">;
 export ledger optionCount: Uint<8>;
 export ledger tallies: Map<Uint<8>, Counter>;
 export ledger totalVotes: Counter;
+export ledger nullifiers: Set<Bytes<32>>;
 
 witness secretBallot(): Uint<8>;
+witness voterSecret(): Bytes<32>;
+
+export pure circuit nullifierOf(pollId: Bytes<32>, secret: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "cepush:nullifier:v1"), pollId, secret]);
+}
 
 export circuit vote(): [] {
   const choice = secretBallot();
   assert(choice < optionCount, "ballot is outside the poll's option range");
+
+  const spent = disclose(nullifierOf(kernel.self().bytes, voterSecret()));
+  assert(!nullifiers.member(spent), "this voter key has already voted in this poll");
+  nullifiers.insert(spent);
+
   tallies.lookup(disclose(choice)).increment(1);
   totalVotes.increment(1);
 }
 ```
 
-`vote` takes no parameters. That is the point: the choice comes from the voter's local
-witness, so the transaction carries a proof and nothing else.
+`vote` takes no parameters. That is the point: the choice and the voter key come from
+the voter's local witnesses, so the transaction carries a proof, a nullifier, and
+nothing else.
 
 ---
 
@@ -131,7 +172,8 @@ system for reduced motion. It is laid out for a phone first and widens to two co
 src/
 ├── lib/wallet.ts          discovery, connect, typed errors
 ├── lib/providers.ts       the six Midnight.js providers, and the wallet bridge
-├── lib/contract.ts        deploy, vote, and the witness
+├── lib/contract.ts        deploy, vote, the witnesses, the already-voted check
+├── lib/voterKey.ts        one private voter key per wallet
 ├── hooks/useWallet.ts     connect / disconnect as React state
 ├── components/
 │   ├── WalletConnect.tsx  wallet panel and every error state
@@ -164,9 +206,10 @@ last two have no adapter in the SDK — the connector takes and returns serialis
 transaction strings while Midnight.js works with ledger `Transaction` objects — so that
 translation lives in `src/lib/providers.ts`.
 
-**Voting.** `findDeployedContract`, then `callTx.vote()`. The circuit takes no
-arguments at all: the ballot reaches it as a witness, so the transaction carries a proof
-and nothing else.
+**Voting.** First the app computes this wallet's nullifier and looks it up in the
+public set; if it is there, the ballot panel locks and says why. Otherwise
+`findDeployedContract`, then `callTx.vote()`. The circuit takes no arguments at all: the
+ballot and the voter key reach it as witnesses.
 
 ### The privacy claim, in the UI
 
@@ -184,12 +227,12 @@ the button that uses it:
 The claim is not only a sentence on the page. Two things in the app let anyone check it:
 
 1. **The receipt.** After a ballot is accepted, the app shows the transaction id, the
-   arguments the circuit was called with — none, `vote()` takes no parameters — and
-   where the ballot went: nowhere outside the device.
+   nullifier it spent, the arguments the circuit was called with — none, `vote()` takes
+   no parameters — and where the ballot went: nowhere outside the device.
 2. **What the chain can see.** A second panel reads the poll's entire public state
-   straight from the Preprod indexer: one counter per option and the total. It re-reads
-   after every ballot. There is no field that holds a ballot, because the contract has
-   none.
+   straight from the Preprod indexer: one counter per option, the total, and how many
+   nullifiers have been spent. It re-reads after every ballot. There is no field that
+   holds a ballot or a voter, because the contract has none.
 
 Anyone can look the transaction up in a Preprod explorer and find the same thing: a
 proof, and no ballot.
@@ -242,7 +285,7 @@ Then, with Node 22 (`nvm use` picks it up from `.nvmrc`):
 ```bash
 npm install
 npm run compact             # compiles to managed/cepush
-npm test                    # 10 tests across logic, state and privacy
+npm test                    # 17 tests across logic, state, nullifier and privacy
 ```
 
 For the frontend:
@@ -293,7 +336,7 @@ still cannot pay for a transaction.
 
 ## Tests
 
-Ten tests, all passing, driving the compiled circuits in-process — no node and no
+Seventeen tests, all passing, driving the compiled circuits in-process — no node and no
 proof server, so the suite finishes in seconds.
 
 | Suite | Tests | Covers |
@@ -301,6 +344,20 @@ proof server, so the suite finishes in seconds.
 | circuit logic | 3 | only the chosen option increments, by one; out-of-range ballots are rejected; a poll needs at least two options |
 | state transition | 3 | the ledger after a sequence of votes; metadata stays stable; counters always sum to `totalVotes` |
 | privacy | 4 | the ballot never reaches the ledger, the circuit returns nothing, the private state stays local, vote order is unrecoverable |
+| nullifier | 4 | a second ballot from the same key is refused; distinct keys each count once; the published nullifier matches the off-chain one; the set is as large as the vote count |
+| nullifier privacy | 3 | the voter key never reaches public state; one key gives unrelated nullifiers in two polls; the ballot has no influence on the nullifier |
+
+## Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and pull
+request:
+
+1. installs the pinned 0.31 Compact compiler,
+2. recompiles the contract from source and **fails if the committed `managed/`
+   artefacts differ**. Compilation is deterministic, so a diff means the committed
+   circuits or keys are stale,
+3. runs the test suite,
+4. type-checks and builds the app.
 
 ---
 
