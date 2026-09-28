@@ -479,6 +479,9 @@ fieldset:disabled .option { cursor: not-allowed; opacity: 0.5; }
 .notice--not-deployed { border-left-color: var(--warn); }
 .notice--network-mismatch > .icon,
 .notice--not-deployed > .icon { color: var(--warn); }
+.notice--voted { border-left-color: var(--gold); }
+.notice--voted > .icon { color: var(--gold-strong); }
+.notice--voted strong { color: var(--text); }
 
 .receipt {
   display: grid;
@@ -489,6 +492,7 @@ fieldset:disabled .option { cursor: not-allowed; opacity: 0.5; }
 
 .receipt dt { color: var(--text-3); font-size: 0.82rem; }
 .receipt dd { margin: 0; overflow-wrap: anywhere; }
+.receipt__note { display: block; margin-top: 0.2rem; color: var(--text-3); font-size: 0.8rem; }
 
 /* ---------------------------------------------------------------- wallet -- */
 

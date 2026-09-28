@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
+  AlreadyVotedError,
   castVote,
   ContractNotDeployedError,
+  hasVoted,
   isDeployed,
   POLL,
   ProofFailedError,
@@ -19,7 +21,7 @@ type Props = {
 type Phase =
   | { readonly kind: 'idle' }
   | { readonly kind: 'proving' }
-  | { readonly kind: 'submitted'; readonly txId: string }
+  | { readonly kind: 'submitted'; readonly txId: string; readonly nullifier: string }
   | { readonly kind: 'error'; readonly message: string; readonly variant: string };
 
 export function CircuitCall({ session, onVoted }: Props) {
@@ -27,9 +29,26 @@ export function CircuitCall({ session, onVoted }: Props) {
   // storage, and is cleared the moment the proof is done with it.
   const [ballot, setBallot] = useState<number | null>(null);
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
+  // Whether this wallet's nullifier is already in the public set. `null` while
+  // the chain has not answered, or when there is no wallet to ask about.
+  const [voted, setVoted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setVoted(null);
+    if (session === null || !isDeployed()) return;
+    let live = true;
+    hasVoted(session)
+      .then((answer) => live && setVoted(answer))
+      // Unknown is fine: the circuit refuses a second ballot on its own.
+      .catch(() => live && setVoted(null));
+    return () => {
+      live = false;
+    };
+  }, [session]);
 
   const busy = phase.kind === 'proving';
-  const canVote = session !== null && ballot !== null && !busy;
+  const locked = voted === true;
+  const canVote = session !== null && ballot !== null && !busy && !locked;
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -37,11 +56,15 @@ export function CircuitCall({ session, onVoted }: Props) {
 
     setPhase({ kind: 'proving' });
     try {
-      const { txId } = await castVote(session, ballot);
-      setPhase({ kind: 'submitted', txId });
+      const { txId, nullifier } = await castVote(session, ballot);
+      setPhase({ kind: 'submitted', txId, nullifier });
+      setVoted(true);
       onVoted?.();
     } catch (e) {
-      if (e instanceof ContractNotDeployedError) {
+      if (e instanceof AlreadyVotedError) {
+        setVoted(true);
+        setPhase({ kind: 'idle' });
+      } else if (e instanceof ContractNotDeployedError) {
         setPhase({ kind: 'error', message: e.message, variant: 'not-deployed' });
       } else if (e instanceof ProofFailedError) {
         setPhase({ kind: 'error', message: e.message, variant: 'proof' });
@@ -72,7 +95,7 @@ export function CircuitCall({ session, onVoted }: Props) {
       </div>
 
       <form onSubmit={onSubmit}>
-        <fieldset disabled={session === null || busy}>
+        <fieldset disabled={session === null || busy || locked}>
           <legend className="sr-only">Your ballot</legend>
           <div className="options">
             {POLL.options.map((label, index) => (
@@ -98,7 +121,10 @@ export function CircuitCall({ session, onVoted }: Props) {
           <Icon name="shield" size={20} />
           <span>
             <strong>Proved without revealing your input</strong>
-            <span>Your choice stays on this device and is never sent to the contract.</span>
+            <span>
+              Your choice stays on this device and is never sent to the contract. One ballot per
+              wallet, enforced by an anonymous nullifier.
+            </span>
           </span>
         </p>
 
@@ -106,6 +132,10 @@ export function CircuitCall({ session, onVoted }: Props) {
           {busy ? (
             <>
               <span className="spinner" aria-hidden="true" /> Generating proof…
+            </>
+          ) : locked ? (
+            <>
+              <Icon name="check" size={18} /> Ballot already cast
             </>
           ) : (
             <>
@@ -122,6 +152,17 @@ export function CircuitCall({ session, onVoted }: Props) {
           <Icon name="alert" />
           <div className="notice__body">
             This build has no contract address yet, so the ballot cannot be submitted.
+          </div>
+        </div>
+      )}
+
+      {locked && phase.kind !== 'submitted' && (
+        <div className="notice notice--voted" role="status">
+          <Icon name="key" />
+          <div className="notice__body">
+            <strong>This wallet has already voted in this poll.</strong> Its nullifier is in the
+            public set, so the contract would refuse a second ballot. Which option it chose is not
+            recorded anywhere.
           </div>
         </div>
       )}
@@ -144,6 +185,13 @@ export function CircuitCall({ session, onVoted }: Props) {
               <dt>Transaction</dt>
               <dd>
                 <code>{phase.txId}</code>
+              </dd>
+              <dt>Nullifier</dt>
+              <dd>
+                <code>{phase.nullifier}</code>
+                <span className="receipt__note">
+                  public; proves this voter key voted once, not who holds it
+                </span>
               </dd>
               <dt>Circuit arguments</dt>
               <dd>
