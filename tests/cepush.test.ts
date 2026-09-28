@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CepushSimulator } from './simulator.js';
+import { CepushSimulator, newVoterSecret } from './simulator.js';
 
 const TITLE = 'Should the DAO fund the summer meetup?';
 const OPTIONS = 3; // 0 = yes, 1 = no, 2 = abstain
@@ -128,5 +128,96 @@ describe('cepush — privacy', () => {
     expect(Number(forwards.getLedger().totalVotes)).toBe(
       Number(backwards.getLedger().totalVotes),
     );
+  });
+});
+
+describe('cepush — nullifier', () => {
+  it('rejects a second ballot from the same voter key', () => {
+    const poll = new CepushSimulator(TITLE, OPTIONS, 0);
+    poll.vote();
+
+    // Same key, even with a different choice: the nullifier is the same, so
+    // the circuit refuses before any counter moves.
+    expect(() => poll.withBallot(1).vote()).toThrow(/already voted/);
+    expect(poll.tallies(OPTIONS)).toEqual([1, 0, 0]);
+    expect(Number(poll.getLedger().totalVotes)).toBe(1);
+  });
+
+  it('accepts one ballot from each distinct voter key', () => {
+    const poll = new CepushSimulator(TITLE, OPTIONS, 0);
+    poll.vote();
+    poll.asNewVoter(0).vote();
+    poll.asNewVoter(2).vote();
+
+    expect(poll.tallies(OPTIONS)).toEqual([2, 0, 1]);
+    expect(poll.nullifiers()).toHaveLength(3);
+    expect(new Set(poll.nullifiers()).size).toBe(3);
+  });
+
+  it('publishes exactly the nullifier the app computes off-chain', () => {
+    // The app checks "have I voted already?" by computing the nullifier with
+    // the exported pure circuit. That only works if it matches the one the
+    // vote circuit writes.
+    const secret = newVoterSecret();
+    const poll = new CepushSimulator(TITLE, OPTIONS, 1, secret);
+    poll.vote();
+
+    expect(poll.nullifiers()).toEqual([poll.nullifierFor(secret)]);
+  });
+
+  it('keeps the nullifier set as large as the vote count', () => {
+    const poll = new CepushSimulator(TITLE, OPTIONS, 2);
+    poll.vote();
+    poll.asNewVoter(1).vote();
+    try {
+      poll.vote(); // same key again, refused
+    } catch {
+      // expected
+    }
+
+    expect(BigInt(poll.nullifiers().length)).toBe(poll.getLedger().totalVotes);
+  });
+});
+
+describe('cepush — nullifier privacy', () => {
+  it('never publishes the voter key', () => {
+    const secret = newVoterSecret();
+    const poll = new CepushSimulator(TITLE, OPTIONS, 0, secret);
+    poll.vote();
+
+    const snapshot = JSON.stringify(
+      { ledger: poll.getLedger(), nullifiers: poll.nullifiers() },
+      (_key, value) => (typeof value === 'bigint' ? value.toString() : value),
+    );
+    expect(snapshot).not.toContain(secret);
+    expect(poll.nullifiers()[0]).not.toBe(secret);
+  });
+
+  it('gives the same voter key unrelated nullifiers in different polls', () => {
+    // The poll id is part of the hash, so one person voting in two polls
+    // cannot be matched across them from the public nullifier sets.
+    const secret = newVoterSecret();
+    const first = new CepushSimulator(TITLE, OPTIONS, 0, secret);
+    const second = new CepushSimulator(TITLE, OPTIONS, 0, secret);
+    expect(first.address).not.toBe(second.address);
+
+    first.vote();
+    second.vote();
+
+    expect(first.nullifiers()[0]).not.toBe(second.nullifiers()[0]);
+  });
+
+  it('does not let the ballot influence the nullifier', () => {
+    // If the choice were mixed into the nullifier, comparing nullifiers could
+    // leak it. Two polls, same key and address, different ballots: same hash.
+    const secret = newVoterSecret();
+    const address = new CepushSimulator(TITLE, OPTIONS, 0).address;
+    const yes = new CepushSimulator(TITLE, OPTIONS, 0, secret, address);
+    const no = new CepushSimulator(TITLE, OPTIONS, 1, secret, address);
+
+    yes.vote();
+    no.vote();
+
+    expect(yes.nullifiers()).toEqual(no.nullifiers());
   });
 });
