@@ -44,3 +44,6 @@ Thumbs.db
 
 # NOTE: managed/ is the output of `compact compile` but is COMMITTED
 # on purpose — the program spec requires the compiled artifacts in the repo.
+
+# Vercel CLI project link
+.vercel
