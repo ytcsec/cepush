@@ -4,11 +4,11 @@
  * The ballot never appears in this module's inputs as a circuit argument. It is
  * handed to the witness at proof time and dropped immediately afterwards.
  */
-import { fromHex, type WitnessContext } from '@midnight-ntwrk/compact-runtime';
+import { fromHex, toHex, type WitnessContext } from '@midnight-ntwrk/compact-runtime';
 import * as CompiledContract from '@midnight-ntwrk/compact-js/effect/CompiledContract';
 import { deployContract, findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
 
-import { Contract, ledger, type Ledger } from '../../managed/cepush/contract/index.js';
+import { Contract, ledger, pureCircuits, type Ledger } from '../../managed/cepush/contract/index.js';
 import {
   createProviders,
   PRIVATE_STATE_ID,
@@ -44,6 +44,8 @@ export const POLL = {
 
 export type VoteOutcome = {
   readonly txId: string;
+  /** The nullifier this ballot spent. Public: it is on the ledger for anyone to find. */
+  readonly nullifier: string;
 };
 
 /** Walks the cause chain, because the outermost message is rarely the useful one. */
@@ -88,6 +90,14 @@ export class ProofFailedError extends Error {
   }
 }
 
+/** Raised when this wallet's voter key has already spent its nullifier in this poll. */
+export class AlreadyVotedError extends Error {
+  constructor() {
+    super('This wallet has already voted in this poll. Each voter key counts once.');
+    this.name = 'AlreadyVotedError';
+  }
+}
+
 /** Raised when the app is running against a build with no contract address. */
 export class ContractNotDeployedError extends Error {
   constructor() {
@@ -96,12 +106,6 @@ export class ContractNotDeployedError extends Error {
   }
 }
 
-/**
- * Casts one ballot.
- *
- * `option` is the private input. It is passed straight into proof generation
- * and is never logged, stored, or returned.
- */
 /**
  * The witnesses the contract asks for. They read the ballot and the voter key
  * out of private state and hand them to the prover. Nothing here writes, logs
@@ -130,6 +134,37 @@ const compiledContract = CompiledContract.make('cepush', Contract).pipe(
   CompiledContract.withCompiledFileAssets('cepush'),
 );
 
+/**
+ * The nullifier this wallet's voter key spends in this poll.
+ *
+ * Computed with the contract's own exported pure circuit, so it is exactly the
+ * value `vote` would publish. The voter key goes in; only the hash comes out.
+ */
+async function nullifierFor(session: WalletSession): Promise<Uint8Array> {
+  const voterSecret = await voterKeyFor(session.coinPublicKey);
+  return pureCircuits.nullifierOf(fromHex(CONTRACT_ADDRESS), fromHex(voterSecret));
+}
+
+/**
+ * Whether this wallet has already voted, read from the public nullifier set.
+ *
+ * Answering the question needs nothing private to leave the device: the
+ * nullifier is computed locally and looked up in state anyone can read.
+ */
+export async function hasVoted(session: WalletSession): Promise<boolean> {
+  if (!isDeployed()) throw new ContractNotDeployedError();
+  const { publicDataProvider } = createProviders(session);
+  const state = await publicDataProvider.queryContractState(CONTRACT_ADDRESS);
+  if (state === null) return false;
+  return ledger(state.data).nullifiers.member(await nullifierFor(session));
+}
+
+/**
+ * Casts one ballot.
+ *
+ * `option` is the private input. It is passed straight into proof generation
+ * and is never logged, stored, or returned.
+ */
 export async function castVote(session: WalletSession, option: number): Promise<VoteOutcome> {
   if (!isDeployed()) throw new ContractNotDeployedError();
   if (!Number.isInteger(option) || option < 0 || option >= POLL.options.length) {
@@ -138,7 +173,13 @@ export async function castVote(session: WalletSession, option: number): Promise<
     throw new ProofFailedError(new Error('ballot is outside the poll range'));
   }
 
+  // Checked before proving, so a second ballot fails in a second rather than
+  // after a proof and a wallet prompt. If the indexer cannot answer, carry on:
+  // the circuit is the authority and enforces it on chain regardless.
+  if (await hasVoted(session).catch(() => false)) throw new AlreadyVotedError();
+
   const providers = createProviders(session);
+  const nullifier = toHex(await nullifierFor(session));
 
   try {
     await resetPrivateStore(providers.privateStateProvider, CONTRACT_ADDRESS);
@@ -152,8 +193,10 @@ export async function castVote(session: WalletSession, option: number): Promise<
     // `vote` takes no arguments: the ballot travels as a witness, so the call
     // itself carries nothing about the choice.
     const result = await contract.callTx.vote();
-    return { txId: result.public.txId };
+    return { txId: result.public.txId, nullifier };
   } catch (e) {
+    // Two tabs racing, or a ballot landing between the check and the proof.
+    if (/already voted/.test(describe(e))) throw new AlreadyVotedError();
     throw new ProofFailedError(e);
   } finally {
     // The ballot has served its purpose. Drop it, whatever happened.
@@ -191,6 +234,8 @@ export type PublicTally = {
   readonly title: string;
   readonly counts: readonly bigint[];
   readonly totalVotes: bigint;
+  /** How many nullifiers have been spent. Matches `totalVotes` on an honest ledger. */
+  readonly nullifiers: bigint;
 };
 
 /**
@@ -212,5 +257,10 @@ export async function readTally(session: WalletSession): Promise<PublicTally | n
   for (let i = 0n; i < view.optionCount; i += 1n) {
     counts.push(view.tallies.member(i) ? view.tallies.lookup(i).read() : 0n);
   }
-  return { title: view.title, counts, totalVotes: view.totalVotes };
+  return {
+    title: view.title,
+    counts,
+    totalVotes: view.totalVotes,
+    nullifiers: view.nullifiers.size(),
+  };
 }
