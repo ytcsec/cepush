@@ -15,8 +15,9 @@ type Props = {
  *
  * The ballot panel says the choice stays on the device. This panel shows the
  * public side of the same poll, read straight from the indexer, so the claim
- * can be checked rather than taken on trust — the ledger holds counters and a
- * total, and no field anywhere holds a ballot.
+ * can be checked rather than taken on trust — the ledger holds counters, a
+ * total and a set of anonymous nullifiers, and no field anywhere holds a
+ * ballot or a voter.
  */
 export function PublicLedger({ session, refreshKey }: Props) {
   const [tally, setTally] = useState<PublicTally | null>(null);
@@ -105,10 +106,20 @@ export function PublicLedger({ session, refreshKey }: Props) {
               <dt>Total ballots</dt>
               <dd>{tally.totalVotes.toString()}</dd>
             </div>
+            <div title="One per ballot. Each is a one-way hash of a voter key, so none points to a wallet.">
+              <dt>Nullifiers spent</dt>
+              <dd>{tally.nullifiers.toString()}</dd>
+            </div>
             <div className="is-hidden">
               <dt>Who chose what</dt>
               <dd>
                 <Icon name="lock" size={15} /> not stored
+              </dd>
+            </div>
+            <div className="is-hidden">
+              <dt>Who voted</dt>
+              <dd>
+                <Icon name="lock" size={15} /> unlinkable
               </dd>
             </div>
           </dl>
