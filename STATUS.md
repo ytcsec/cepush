@@ -21,6 +21,19 @@ Last updated: 2026-09-28
 | 6 | Contract: nullifier, one vote per voter key | ✓ compiled, tested, deployed at block 2748944; on-chain state decodes with an empty `nullifiers` set |
 | 7 | Minimum 10 meaningful commits | ✓ |
 
+## L3 — submission checklist
+
+| # | Item | State |
+|---|------|-------|
+| 1 | Public GitHub repository with complete README | ✓ |
+| 2 | Live demo link | ✓ https://cepush.vercel.app, on the L3 contract |
+| 3 | Screenshot: test output, 3+ tests passing | ✓ `docs/screenshots/tests.png`, 17 passing |
+| 4 | CI/CD badge or workflow file with passing runs | ✓ badge in the README, runs green |
+| 5 | Demo video (1 minute) showing full functionality | ✗ owner — the linked video is from L2 and predates the nullifier |
+| 6 | README "privacy model": what an observer can and cannot learn | ✓ |
+| 7 | Product proposal from the idea list, submitted for approval | ◐ `PROPOSAL.md` written · submission — owner |
+| 8 | Minimum 10 meaningful commits | ✓ |
+
 ### What changed in the contract
 
 - `witness voterSecret(): Bytes<32>` — a private voter key, never disclosed.
@@ -128,6 +141,9 @@ errors and no warnings.
 ## Remaining owner steps
 
 1. **Submit the idea for approval** with `PROPOSAL.md` on the program platform.
+2. **Record the L3 demo video**, about a minute: connect Lace, cast a ballot, show the
+   receipt with its nullifier and the tally moving, then reload and show the ballot
+   panel locked with "This wallet has already voted in this poll".
 
 The first ballot on the L3 contract was cast from the live site through Lace and
 checked by the owner.
