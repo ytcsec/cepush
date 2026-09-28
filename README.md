@@ -49,7 +49,7 @@ Progress against the level roadmap is tracked in [STATUS.md](STATUS.md).
 | | Link |
 |---|---|
 | Live demo | https://cepush.vercel.app |
-| Demo video — wallet connect and a circuit call | `not yet recorded` |
+| Demo video — wallet connect and a circuit call | https://www.youtube.com/watch?v=cn8_Vk-XAms |
 
 ---
 

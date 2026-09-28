@@ -35,7 +35,7 @@ Last updated: 2026-09-28
 | 1 | Public GitHub repository with README | ✓ |
 | 2 | Live demo link | ✓ https://cepush.vercel.app |
 | 3 | Deployed Preprod address, verifiable on-chain | ✓ |
-| 4 | Demo video: wallet connect + successful circuit call | ✗ blocked — owner |
+| 4 | Demo video: wallet connect + successful circuit call | ✓ https://www.youtube.com/watch?v=cn8_Vk-XAms |
 | 5 | README documenting the privacy claim | ✓ |
 | 6 | Minimum 8 meaningful commits | ✓ |
 
@@ -86,8 +86,7 @@ errors and no warnings.
 
 ## Remaining owner steps
 
-1. **Record the demo video** — connect Lace, cast a ballot, show the receipt and the
-   tally moving. Link it in the README.
+None for L2. Every item on the submission checklist is met.
 
 ---
 
