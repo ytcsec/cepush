@@ -40,8 +40,8 @@ export default function App() {
           </h1>
           <p className="hero__lede">
             cepush lets a community vote on-chain while the ballot itself stays on your device.
-            Your choice is proved in zero knowledge locally; the contract receives a proof and
-            publishes only the per-option totals.
+            Your choice is proved in zero knowledge locally; the contract receives a proof and an
+            anonymous nullifier, and publishes only the per-option totals.
           </p>
 
           <ul className="pillars">
@@ -59,6 +59,11 @@ export default function App() {
               <Icon name="shield" size={22} />
               <h3>Proved, not shown</h3>
               <p>The circuit proves your ballot is a valid option without revealing which.</p>
+            </li>
+            <li className="pillar">
+              <Icon name="key" size={22} />
+              <h3>One vote each</h3>
+              <p>A one-way nullifier refuses a second ballot from the same voter, without naming them.</p>
             </li>
           </ul>
         </section>
@@ -89,15 +94,16 @@ export default function App() {
             <li className="step">
               <h3>Your device proves it</h3>
               <p>
-                A zero-knowledge proof shows the choice is a legal option. The proof carries the
-                fact, not the value.
+                A zero-knowledge proof shows the choice is a legal option and derives a nullifier
+                from a voter key that never leaves the device. The proof carries the facts, not
+                the values.
               </p>
             </li>
             <li className="step">
               <h3>The chain counts it</h3>
               <p>
-                Lace submits the proof, one counter moves by one, and the total grows. The ballot
-                itself is never written anywhere.
+                Lace submits the proof. The contract checks the nullifier is new, records it, and
+                moves one counter by one. The ballot itself is never written anywhere.
               </p>
             </li>
           </ol>

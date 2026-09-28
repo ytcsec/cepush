@@ -206,7 +206,7 @@ code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
 
 .pillars {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
   margin: 3rem 0 0;
   padding: 0;
@@ -701,6 +701,10 @@ fieldset:disabled .option { cursor: not-allowed; opacity: 0.5; }
 
 @media (max-width: 60rem) {
   .workspace { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 64rem) {
+  .pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 48rem) {
