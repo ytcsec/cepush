@@ -115,7 +115,7 @@ Browser (React + Vite)                         Midnight Preprod
 
 - **Contract:** Compact 0.23 (compiler 0.31.1), `contracts/cepush.compact`.
 - **App:** React 18, Vite 5, Midnight.js 4.1.1, DApp Connector API 4.0.1.
-- **Proofs** are generated locally against a proof server on the voter's machine, so
+- **Proofs** are produced locally against a proof server on the voter's machine, so
   the ballot and key never leave it.
 - **CI** recompiles the contract on every push, fails if the committed circuits and keys
   differ from the source, runs the test suite, and builds the app.
