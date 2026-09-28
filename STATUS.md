@@ -1,9 +1,45 @@
 # STATUS
 
-**Current level: L2 — frontend, Lace on Preprod**
+**Current level: L3 — nullifier, CI/CD, proposal**
 Last updated: 2026-09-28
 
-> **Deployed to Preprod on 2026-09-25** at `b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86` (block 2707858). L1 is closed.
+> L1 and L2 are closed. The live Preprod address is still the L2 contract,
+> `b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86` (block 2707858).
+> The L3 contract is built and tested and waits for the owner's redeploy.
+
+---
+
+## L3 — requirements to pass
+
+| # | Requirement | State |
+|---|-------------|-------|
+| 1 | At least 3 tests, passing | ✓ 17/17 — logic, state, privacy, nullifier, nullifier privacy |
+| 2 | CI/CD: compile and test on every push | ✓ `.github/workflows/ci.yml`, first run green ([36442219455](https://github.com/ytcsec/cepush/actions/runs/36442219455)) |
+| 3 | Polished UI | ✓ already-voted state, nullifier in the receipt and the ledger panel, one-vote pillar, checked at 1280 / 900 / 390 px |
+| 4 | `PROPOSAL.md` | ✓ |
+| 5 | Idea submitted for approval | ✗ owner — submit `PROPOSAL.md` on the program platform |
+| 6 | Contract: nullifier, one vote per voter key | ✓ compiled, tested · ✗ Preprod redeploy — owner |
+| 7 | Minimum 10 meaningful commits | ✓ |
+
+### What changed in the contract
+
+- `witness voterSecret(): Bytes<32>` — a private voter key, never disclosed.
+- `export pure circuit nullifierOf(pollId, secret)` —
+  `persistentHash("cepush:nullifier:v1", pollId, secret)`.
+- `export ledger nullifiers: Set<Bytes<32>>` — the public double-vote guard.
+- `vote()` discloses `nullifierOf(kernel.self().bytes, voterSecret())`, refuses it if it
+  is already in the set, inserts it, then counts the ballot as before.
+
+### How far this is verified
+
+| Layer | Evidence |
+|---|---|
+| Contract logic | 17 tests, passing, including double-vote refusal and cross-poll unlinkability |
+| Off-chain nullifier = on-chain nullifier | test: the published value equals `pureCircuits.nullifierOf` |
+| Compile is reproducible | a clean Linux checkout recompiles byte-identical `managed/`; CI enforces it |
+| CI | green on GitHub Actions |
+| App build | `tsc --noEmit` and `vite build` clean |
+| Live vote against the new contract | ✗ waits for the redeploy |
 
 ---
 
@@ -60,17 +96,20 @@ errors and no warnings.
   Midnight.js speaks ledger `Transaction` objects, and the SDK ships no adapter. The
   translation is in `src/lib/providers.ts`.
 - **Deploy** — a one-shot panel, shown only when the build has no contract address.
-- **Vote** — `findDeployedContract`, then `callTx.vote()`. The circuit takes no
-  arguments: the ballot travels as a witness.
-- **Receipt** — after a ballot is accepted: the transaction id, the circuit arguments
-  (none), and where the ballot went (nowhere).
+- **Vote** — first the wallet's nullifier is looked up in the public set; if it is
+  there the ballot panel locks. Otherwise `findDeployedContract`, then `callTx.vote()`.
+  The circuit takes no arguments: the ballot and the voter key travel as witnesses.
+- **Voter key** — 32 random bytes per wallet, kept in local storage under a hash of the
+  wallet's public key. Never rendered, logged or sent; only its nullifier leaves.
+- **Receipt** — after a ballot is accepted: the transaction id, the spent nullifier, the
+  circuit arguments (none), and where the ballot went (nowhere).
 - **Public ledger panel** — reads the poll's whole public state from the indexer and
   re-reads after every ballot. This is the observable half of the privacy claim.
 - **The ballot** — written to private state immediately before proving and deleted
   immediately after, under a password that exists only in memory for that page load.
   Never logged, never rendered back, never sent as an argument.
 
-### How far this is verified
+### How far L2 was verified
 
 | Layer | Evidence |
 |---|---|
@@ -86,7 +125,14 @@ errors and no warnings.
 
 ## Remaining owner steps
 
-None for L2. Every item on the submission checklist is met.
+1. **Redeploy the L3 contract to Preprod.** Start the app with no contract address so
+   the deploy panel appears:
+   `VITE_CONTRACT_ADDRESS= npm run dev -- --port 5174`, open http://localhost:5174,
+   connect Lace on Preprod with the proof server running, press **Deploy**, and send
+   back the new address. The Vercel environment, README and this file then move to it.
+2. **Cast one ballot on the new contract**, then try a second one from the same wallet:
+   the panel should lock with "This wallet has already voted in this poll".
+3. **Submit the idea for approval** with `PROPOSAL.md` on the program platform.
 
 ---
 
@@ -126,3 +172,13 @@ Matches the official support matrix for the 0.31.1 compiler line.
 - **2026-09-25** — `onchain-runtime-v3` is pinned to 3.0.0 and hoisted to a single copy.
   Two copies in the bundle meant state read by Midnight.js failed the contract's own
   `instanceof` checks, so deploying worked and voting did not.
+- **2026-09-28** — The voter key is minted once and stored, not derived from a wallet
+  signature. Midnight signatures are BIP-340 with auxiliary randomness: signing the same
+  message twice gave two different signatures in a direct test, so a derived key would
+  change on every visit and allow a fresh vote each time.
+- **2026-09-28** — The nullifier hashes in the poll's own address, so one voter key gives
+  unrelated nullifiers in different polls. The L4 allowlist will commit to the same key,
+  so nothing about the key changes when eligibility arrives.
+- **2026-09-28** — CI recompiles the contract and fails on any diff in `managed/`.
+  Compilation was checked to be byte-for-byte reproducible between the local toolchain
+  image and a clean Linux checkout, so a diff can only mean stale artefacts.
