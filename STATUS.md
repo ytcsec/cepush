@@ -29,7 +29,7 @@ Last updated: 2026-09-28
 | 2 | Live demo link | ✓ https://cepush.vercel.app, on the L3 contract |
 | 3 | Screenshot: test output, 3+ tests passing | ✓ `docs/screenshots/tests.png`, 17 passing |
 | 4 | CI/CD badge or workflow file with passing runs | ✓ badge in the README, runs green |
-| 5 | Demo video (1 minute) showing full functionality | ✗ owner — the linked video is from L2 and predates the nullifier |
+| 5 | Demo video (1 minute) showing full functionality | ✓ https://www.youtube.com/watch?v=x7eDJ8-1Jn0 |
 | 6 | README "privacy model": what an observer can and cannot learn | ✓ |
 | 7 | Product proposal from the idea list, submitted for approval | ◐ `PROPOSAL.md` written · submission — owner |
 | 8 | Minimum 10 meaningful commits | ✓ |
@@ -141,9 +141,6 @@ errors and no warnings.
 ## Remaining owner steps
 
 1. **Submit the idea for approval** with `PROPOSAL.md` on the program platform.
-2. **Record the L3 demo video**, about a minute: connect Lace, cast a ballot, show the
-   receipt with its nullifier and the tally moving, then reload and show the ballot
-   panel locked with "This wallet has already voted in this poll".
 
 The first ballot on the L3 contract was cast from the live site through Lace and
 checked by the owner.

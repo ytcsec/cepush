@@ -61,7 +61,8 @@ Progress against the level roadmap is tracked in [STATUS.md](STATUS.md).
 | | Link |
 |---|---|
 | Live demo | https://cepush.vercel.app |
-| Demo video — wallet connect and a circuit call | https://www.youtube.com/watch?v=cn8_Vk-XAms |
+| Demo video (L3) — a ballot, its nullifier, and the second ballot refused | https://www.youtube.com/watch?v=x7eDJ8-1Jn0 |
+| Demo video (L2) — wallet connect and a circuit call | https://www.youtube.com/watch?v=cn8_Vk-XAms |
 
 ---
 
