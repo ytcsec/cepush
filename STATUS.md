@@ -17,7 +17,7 @@ Last updated: 2026-09-28
 | 2 | CI/CD: compile and test on every push | ✓ `.github/workflows/ci.yml`, first run green ([36442219455](https://github.com/ytcsec/cepush/actions/runs/36442219455)) |
 | 3 | Polished UI | ✓ already-voted state, nullifier in the receipt and the ledger panel, one-vote pillar, checked at 1280 / 900 / 390 px |
 | 4 | `PROPOSAL.md` | ✓ |
-| 5 | Idea submitted for approval | ✗ owner — submit `PROPOSAL.md` on the program platform |
+| 5 | Idea submitted for approval | ✓ submitted on Rise In on 2026-09-28 (September Challenge, Private Voting), awaiting approval |
 | 6 | Contract: nullifier, one vote per voter key | ✓ compiled, tested, deployed at block 2748944; on-chain state decodes with an empty `nullifiers` set |
 | 7 | Minimum 10 meaningful commits | ✓ |
 
@@ -31,7 +31,7 @@ Last updated: 2026-09-28
 | 4 | CI/CD badge or workflow file with passing runs | ✓ badge in the README, runs green |
 | 5 | Demo video (1 minute) showing full functionality | ✓ https://www.youtube.com/watch?v=x7eDJ8-1Jn0 |
 | 6 | README "privacy model": what an observer can and cannot learn | ✓ |
-| 7 | Product proposal from the idea list, submitted for approval | ◐ `PROPOSAL.md` written · submission — owner |
+| 7 | Product proposal from the idea list, submitted for approval | ✓ `PROPOSAL.md`, submitted on Rise In on 2026-09-28, awaiting approval |
 | 8 | Minimum 10 meaningful commits | ✓ |
 
 ### What changed in the contract
@@ -140,7 +140,8 @@ errors and no warnings.
 
 ## Remaining owner steps
 
-1. **Submit the idea for approval** with `PROPOSAL.md` on the program platform.
+None for L3. Every item on the submission checklist is met; the idea is waiting for
+the committee's approval.
 
 The first ballot on the L3 contract was cast from the live site through Lace and
 checked by the owner.
