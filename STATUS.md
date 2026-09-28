@@ -1,7 +1,7 @@
 # STATUS
 
 **Current level: L2 — frontend, Lace on Preprod**
-Last updated: 2026-09-25
+Last updated: 2026-09-28
 
 > **Deployed to Preprod on 2026-09-25** at `b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86` (block 2707858). L1 is closed.
 
@@ -33,7 +33,7 @@ Last updated: 2026-09-25
 | # | Item | State |
 |---|------|-------|
 | 1 | Public GitHub repository with README | ✓ |
-| 2 | Live demo link | ◐ `vercel.json` ready — import the repo in Vercel once (4) lands |
+| 2 | Live demo link | ✓ https://cepush.vercel.app |
 | 3 | Deployed Preprod address, verifiable on-chain | ✓ |
 | 4 | Demo video: wallet connect + successful circuit call | ✗ blocked — owner |
 | 5 | README documenting the privacy claim | ✓ |
@@ -86,11 +86,7 @@ errors and no warnings.
 
 ## Remaining owner steps
 
-1. **Publish the live demo** — import the repository in Vercel with
-   `VITE_NETWORK_ID=preprod` and
-   `VITE_CONTRACT_ADDRESS=b0f8fe543f922416660dabd54d9cf6ff3041dca2fcc9386ce6bd9fa9848a3c86`,
-   then put the URL in the README.
-2. **Record the demo video** — connect Lace, cast a ballot, show the receipt and the
+1. **Record the demo video** — connect Lace, cast a ballot, show the receipt and the
    tally moving. Link it in the README.
 
 ---

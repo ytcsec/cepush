@@ -48,7 +48,7 @@ Progress against the level roadmap is tracked in [STATUS.md](STATUS.md).
 
 | | Link |
 |---|---|
-| Live demo | `not yet published` |
+| Live demo | https://cepush.vercel.app |
 | Demo video — wallet connect and a circuit call | `not yet recorded` |
 
 ---
@@ -255,9 +255,9 @@ npm run build               # tsc --noEmit && vite build, zero errors
 
 ### Publishing the live demo
 
-`vercel.json` holds the hosting config. Import the repository in Vercel, set
-`VITE_NETWORK_ID=preprod` and `VITE_CONTRACT_ADDRESS=<the Preprod address>` as
-environment variables, and deploy. The build emits the proving keys and zkir under
+The live demo runs at https://cepush.vercel.app. `vercel.json` holds the hosting
+config; the Vercel project sets `VITE_NETWORK_ID=preprod` and
+`VITE_CONTRACT_ADDRESS=<the Preprod address>` as environment variables. The build emits the proving keys and zkir under
 `/managed/cepush`, so the site needs nothing else.
 
 Voting from the live site still needs Lace on Preprod and a proof server the wallet can
